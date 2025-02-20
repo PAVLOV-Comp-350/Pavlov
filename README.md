@@ -1,2 +1,2 @@
 # Pavlov
-Luis Vazquez, Devin Prothero, Brittney McMullin
+Luis Vazquez, Devin Prothero, Brittney McMullin, Jonathan Peraza

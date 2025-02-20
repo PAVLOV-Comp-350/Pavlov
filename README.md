@@ -1,3 +1,2 @@
 # Pavlov
-
-Devin Prothero
+Luis Vazquez, Devin Prothero

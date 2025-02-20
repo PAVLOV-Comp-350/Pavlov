@@ -1,2 +1,2 @@
 # Pavlov
-Luis Vazquez, Devin Prothero
+Luis Vazquez, Devin Prothero, Jonathan Peraza

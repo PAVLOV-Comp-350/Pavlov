@@ -1,3 +1,1 @@
 # Pavlov
-
-Devin Prothero

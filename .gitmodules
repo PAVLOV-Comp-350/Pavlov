@@ -1,0 +1,3 @@
+[submodule "Pavlov"]
+	path = Pavlov
+	url = https://github.com/PAVLOV-Comp-350/Pavlov.git

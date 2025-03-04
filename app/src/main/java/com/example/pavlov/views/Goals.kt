@@ -1,4 +1,4 @@
-package com.example.pavlov
+package com.example.pavlov.views
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,31 +11,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.pavlov.PavlovApplication
+import com.example.pavlov.theme.ThemeSwitch
+import com.example.pavlov.models.Goal
+import com.example.pavlov.viewmodels.GoalsEvent
+import com.example.pavlov.viewmodels.GoalsState
 
-/**
- * Data class for the Goal model
- */
-data class Goal(
-    val id: String,
-    val title: String,
-    val description: String = "",
-    val isCompleted: Boolean = false,
-    val streak: Int = 0
-)
 
 /**
  * Main screen for showing all the goals
  *
- * @param goals List of goals to show on screen
- * @param onGoalCheckedChange What happens when user checks a box
- * @param onAddGoalClick What happens when the + button gets clicked
+ * @param state Immutable state passed in by the GoalsViewModel
+ * @param onEvent Main callback for processing user interaction events
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalsListScreen(
-    goals: List<Goal>,
-    onGoalCheckedChange: (Goal, Boolean) -> Unit = { _, _ -> },
-    onAddGoalClick: () -> Unit = {}
+    state: GoalsState,
+    onEvent: (GoalsEvent) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -70,7 +63,7 @@ fun GoalsListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddGoalClick,
+                onClick = { onEvent(GoalsEvent.AddGoal) },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
@@ -80,12 +73,14 @@ fun GoalsListScreen(
             }
         }
     ) { paddingValues ->
-        if (goals.isEmpty()) {
+        if (state.goals.isEmpty()) {
             EmptyGoalsDisplay(modifier = Modifier.padding(paddingValues))
         } else {
             GoalsList(
-                goals = goals,
-                onGoalCheckedChange = onGoalCheckedChange,
+                goals = state.goals,
+                // NOTE(Devin): This is temporary until we decide on goal tracking
+                completedGoals = state.completedGoals,
+                onEvent = onEvent,
                 modifier = Modifier.padding(paddingValues)
             )
         }
@@ -98,7 +93,9 @@ fun GoalsListScreen(
 @Composable
 fun GoalsList(
     goals: List<Goal>,
-    onGoalCheckedChange: (Goal, Boolean) -> Unit,
+    // NOTE(Devin): This is temporary until we decide on goal tracking
+    completedGoals: Map<Int, Boolean>,
+    onEvent: (GoalsEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -109,7 +106,8 @@ fun GoalsList(
         items(goals) { goal ->
             GoalItem(
                 goal = goal,
-                onCheckedChange = { checked -> onGoalCheckedChange(goal, checked) }
+                completed = completedGoals[goal.id] ?: false,
+                onEvent = { onEvent(GoalsEvent.MarkGoalComplete(goal.id)) },
             )
         }
     }
@@ -121,7 +119,8 @@ fun GoalsList(
 @Composable
 fun GoalItem(
     goal: Goal,
-    onCheckedChange: (Boolean) -> Unit,
+    completed: Boolean,
+    onEvent: (GoalsEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -141,8 +140,8 @@ fun GoalItem(
             horizontalArrangement = Arrangement.Start
         ) {
             Checkbox(
-                checked = goal.isCompleted,
-                onCheckedChange = onCheckedChange,
+                checked = completed,
+                onCheckedChange = { onEvent(GoalsEvent.MarkGoalComplete(goal.id))},
                 colors = CheckboxDefaults.colors(
                     checkedColor = MaterialTheme.colorScheme.primary,
                     uncheckedColor = MaterialTheme.colorScheme.secondary,

@@ -3,89 +3,61 @@ package com.example.pavlov
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.pavlov.theme.PavlovTheme
+import com.example.pavlov.viewmodels.GoalsViewModel
+import com.example.pavlov.views.GoalsListScreen
 
 class MainActivity : ComponentActivity() {
+
+    /**
+     * This property allows us to access the GoalsViewModel from the Activity as though it were a
+     * member called viewModel. In reality it is a delegate function that initializes the viewModel
+     * on the first call using the factoryProducer object that is passed as a parameter. We need to
+     * do this because the view model is a consumer of the goalsDAO that allows us to access the app
+     * state that is stored in non-volatile storage.
+     */
+    private val viewModel by viewModels<GoalsViewModel>(
+        factoryProducer = {
+            object : ViewModelProvider.Factory {
+                private val db = PavlovApplication.local_db
+                override fun<T: ViewModel> create(modelClass: Class<T>): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return GoalsViewModel(db.goalDao, db.activityDao) as T
+                }
+            }
+        }
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
-            PavlovApp()
-        }
-    }
-}
-
-@Composable
-fun PavlovApp() {
-    // This will re-compose when ThemeManager.isDarkTheme changes
-    PavlovTheme(darkTheme = ThemeManager.isDarkTheme) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            // Create a sample list of goals for demonstration
-            val sampleGoals = remember {
-                mutableStateListOf(
-                    Goal(
-                        id = "1",
-                        title = "Morning Meditation",
-                        description = "15 minutes of mindfulness meditation",
-                        streak = 5
-                    ),
-                    Goal(
-                        id = "2",
-                        title = "Exercise",
-                        description = "30 minutes of cardio",
-                        isCompleted = false,
-                        streak = 12
-                    ),
-                    Goal(
-                        id = "3",
-                        title = "Read",
-                        description = "Read 20 pages of current book",
-                        streak = 3
-                    ),
-                    Goal(
-                        id = "4",
-                        title = "Drink Water",
-                        description = "Drink 8 glasses of water",
-                        streak = 8
-                    )
-                )
-            }
-
-            GoalsListScreen(
-                goals = sampleGoals,
-                onGoalCheckedChange = { goal, isChecked ->
-                    //  local list for demonstration
-                    val index = sampleGoals.indexOfFirst { it.id == goal.id }
-                    if (index >= 0) {
-                        sampleGoals[index] = sampleGoals[index].copy(isCompleted = isChecked)
-                    }
-                },
-                onAddGoalClick = {
-                    // placeholder goal
-                    sampleGoals.add(
-                        Goal(
-                            id = (sampleGoals.size + 1).toString(),
-                            title = "New Goal",
-                            description = "Description for new goal"
-                        )
+            // This will re-compose when isDarkTheme changes
+            val isDarkMode by PavlovApplication.isDarkTheme.collectAsState()
+            PavlovTheme(darkTheme = isDarkMode) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val state by viewModel.state.collectAsState()
+                    GoalsListScreen(
+                        state = state,
+                        onEvent = { viewModel.onEvent(it) },
                     )
                 }
-            )
+            }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    PavlovApp()
 }

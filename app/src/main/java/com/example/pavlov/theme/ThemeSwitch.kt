@@ -1,10 +1,13 @@
-package com.example.pavlov
+package com.example.pavlov.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.example.pavlov.PavlovApplication
 
 /**
  * dark mode toggle switch
@@ -13,10 +16,11 @@ import androidx.compose.ui.Modifier
 fun ThemeSwitch(
     modifier: Modifier = Modifier
 ) {
+    val isDarkMode by PavlovApplication.isDarkTheme.collectAsState()
     Switch(
-        checked = ThemeManager.isDarkTheme,
-        onCheckedChange = { checked ->
-            ThemeManager.isDarkTheme = checked
+        checked = isDarkMode,
+        onCheckedChange = { value ->
+            PavlovApplication.setDarkTheme(value)
         },
         colors = SwitchDefaults.colors(
             checkedThumbColor = MaterialTheme.colorScheme.primary,

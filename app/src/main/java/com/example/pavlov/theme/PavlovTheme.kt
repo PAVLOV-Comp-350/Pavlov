@@ -1,4 +1,4 @@
-package com.example.pavlov
+package com.example.pavlov.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import com.example.pavlov.PavlovApplication
 
 // Dark theme colors
 private val DarkPurple = Color(0xFF3F2C70)
@@ -55,25 +56,16 @@ private val LightColorScheme = lightColorScheme(
     onSurfaceVariant = Color(0xFF444444)
 )
 
-// Singleton to store theme state across the app
-object ThemeManager {
-    // Dark mode by default
-    var isDarkTheme by mutableStateOf(true)
-}
-
 @Composable
 fun PavlovTheme(
-    darkTheme: Boolean = ThemeManager.isDarkTheme,
+    darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = androidx.compose.material3.Typography(),
         content = content
     )
 }
-
-// Typography settings
-private val Typography = androidx.compose.material3.Typography()

@@ -6,9 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -23,13 +21,16 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun PavlovApp() {
+    // Track treats count
+    val treatsCount = remember { mutableStateOf(0) }
+
     // This will re-compose when ThemeManager.isDarkTheme changes
     PavlovTheme(darkTheme = ThemeManager.isDarkTheme) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            // Create a sample list of goals for demonstration
+            // ✅ Corrected list initialization
             val sampleGoals = remember {
                 mutableStateListOf(
                     Goal(
@@ -62,15 +63,22 @@ fun PavlovApp() {
 
             GoalsListScreen(
                 goals = sampleGoals,
+                treatsCount = treatsCount.value,
                 onGoalCheckedChange = { goal, isChecked ->
-                    //  local list for demonstration
                     val index = sampleGoals.indexOfFirst { it.id == goal.id }
                     if (index >= 0) {
+                        // ✅ Correctly update the list
                         sampleGoals[index] = sampleGoals[index].copy(isCompleted = isChecked)
+
+                        // ✅ Only increase treats when first checking, NOT when unchecking
+                        if (isChecked && !goal.isCompleted) {
+                            treatsCount.value++
+                        }
                     }
                 },
+                onTreatEarned = { treatsCount.value++ },
                 onAddGoalClick = {
-                    // placeholder goal
+                    // ✅ Properly add a new goal
                     sampleGoals.add(
                         Goal(
                             id = (sampleGoals.size + 1).toString(),

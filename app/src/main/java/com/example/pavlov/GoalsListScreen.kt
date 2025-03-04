@@ -11,6 +11,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
+import kotlin.random.Random
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.clickable
 
 /**
  * Data class for the Goal model
@@ -25,18 +33,18 @@ data class Goal(
 
 /**
  * Main screen for showing all the goals
- *
- * @param goals List of goals to show on screen
- * @param onGoalCheckedChange What happens when user checks a box
- * @param onAddGoalClick What happens when the + button gets clicked
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalsListScreen(
-    goals: List<Goal>,
-    onGoalCheckedChange: (Goal, Boolean) -> Unit = { _, _ -> },
+    treatsCount: Int,
+    goals: MutableList<Goal>,
+    onGoalCheckedChange: (Goal, Boolean) -> Unit,
+    onTreatEarned: () -> Unit,
     onAddGoalClick: () -> Unit = {}
 ) {
+    var fallingTreats by remember { mutableStateOf(mutableListOf<Pair<Float, Boolean>>()) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -48,7 +56,6 @@ fun GoalsListScreen(
                         Text(
                             "Pavlov",
                             style = MaterialTheme.typography.headlineMedium,
-                            // Bolded
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                         )
                     }
@@ -57,14 +64,26 @@ fun GoalsListScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                navigationIcon = {
-                    Box(modifier = Modifier.padding(start = 16.dp)) {
-                        ThemeSwitch()
-                    }
-                },
+                navigationIcon = { ThemeSwitch() },
                 actions = {
-                    // Empty actions area to balance the layout
-                    Spacer(modifier = Modifier.width(72.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 16.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.dog_treat),
+                            contentDescription = "Treats",
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "$treatsCount",
+                            fontSize = 24.sp,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             )
         },
@@ -73,36 +92,60 @@ fun GoalsListScreen(
                 onClick = onAddGoalClick,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Goal"
-                )
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Goal")
             }
         }
     ) { paddingValues ->
-        if (goals.isEmpty()) {
-            EmptyGoalsDisplay(modifier = Modifier.padding(paddingValues))
-        } else {
-            GoalsList(
-                goals = goals,
-                onGoalCheckedChange = onGoalCheckedChange,
-                modifier = Modifier.padding(paddingValues)
-            )
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (goals.isEmpty()) {
+                EmptyGoalsDisplay()
+            } else {
+                GoalsList(
+                    goals = goals,
+                    onGoalCheckedChange = { goal, isChecked ->
+                        val index = goals.indexOfFirst { it.id == goal.id }
+                        if (index >= 0) {
+                            goals[index] = goals[index].copy(isCompleted = isChecked)
+
+                            if (isChecked) {
+                                fallingTreats = fallingTreats.toMutableList().apply {
+                                    add(Pair(Random.nextFloat() * 300, false)) // Spawn treat with random X
+                                }
+                                onTreatEarned()
+                            }
+                        }
+                    }
+                )
+            }
+
+            // Draw falling treats
+            fallingTreats.forEachIndexed { index, (startX, collected) ->
+                if (!collected) {
+                    FallingTreat(
+                        startX = startX,
+                        onCollected = {
+                            fallingTreats = fallingTreats.toMutableList().apply {
+                                set(index, Pair(startX, true)) // Mark as collected
+                            }
+                        }
+                    )
+                }
+            }
         }
     }
 }
+
 
 /**
  * Shows all the goals in a scrollable list
  */
 @Composable
 fun GoalsList(
-    goals: List<Goal>,
-    onGoalCheckedChange: (Goal, Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    goals: MutableList<Goal>,
+    onGoalCheckedChange: (Goal, Boolean) -> Unit
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -142,7 +185,7 @@ fun GoalItem(
         ) {
             Checkbox(
                 checked = goal.isCompleted,
-                onCheckedChange = onCheckedChange,
+                onCheckedChange = { checked -> onCheckedChange(checked) },
                 colors = CheckboxDefaults.colors(
                     checkedColor = MaterialTheme.colorScheme.primary,
                     uncheckedColor = MaterialTheme.colorScheme.secondary,
@@ -172,7 +215,6 @@ fun GoalItem(
                     )
                 }
 
-                // Show streak if available
                 if (goal.streak > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -185,6 +227,50 @@ fun GoalItem(
         }
     }
 }
+
+/**
+ * Falling treat animation - treats fall to the bottom and stay clickable
+ */
+@Composable
+fun FallingTreat(
+    startX: Float,
+    onCollected: () -> Unit
+) {
+    var isCollected by remember { mutableStateOf(false) }
+    val treatY = remember { Animatable(0f) } // Explicitly setting Float type
+
+    // Start the animation when the composable is first created
+    LaunchedEffect(isCollected) {
+        if (!isCollected) {
+            treatY.animateTo(
+                targetValue = 800f, // Fall to the bottom
+                animationSpec = tween(
+                    durationMillis = 2000, // 2 seconds to fall
+                    easing = FastOutSlowInEasing
+                )
+            )
+        }
+    }
+
+    if (!isCollected) {
+        Icon(
+            painter = painterResource(id = R.drawable.dog_treat),
+            contentDescription = "Falling Treat",
+            modifier = Modifier
+                .offset(x = startX.dp, y = treatY.value.dp) // Apply animation
+                .size(32.dp)
+                .clickable {
+                    isCollected = true
+                    onCollected()
+                },
+            tint = Color(0xFFFFD700) // Gold color
+        )
+    }
+}
+
+
+
+
 
 /**
  * This shows up when you don't have any goals yet
@@ -206,61 +292,10 @@ fun EmptyGoalsDisplay(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Hit that + button to add some stuff",
+                text = "Hit that + button to add some goals!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
         }
     }
 }
-
-/**
- * Preview of the goals list screen.
-
-@Preview(showBackground = true)
-@Composable
-fun GoalsListScreenPreview() {
-    MaterialTheme {
-        GoalsListScreen(
-            goals = listOf(
-                Goal(
-                    id = "1",
-                    title = "Morning Meditation",
-                    description = "15 minutes of mindfulness meditation",
-                    streak = 5
-                ),
-                Goal(
-                    id = "2",
-                    title = "Exercise",
-                    description = "30 minutes of cardio",
-                    isCompleted = true,
-                    streak = 12
-                ),
-                Goal(
-                    id = "3",
-                    title = "Read",
-                    description = "Read 20 pages of current book",
-                    streak = 3
-                ),
-                Goal(
-                    id = "4",
-                    title = "Drink Water",
-                    description = "Drink 8 glasses of water",
-                    streak = 7
-                )
-            )
-        )
-    }
-}
-
-/**
- * Preview of the empty state for the goals list screen.
- */
-@Preview(showBackground = true)
-@Composable
-fun EmptyGoalsListScreenPreview() {
-    MaterialTheme {
-        GoalsListScreen(goals = emptyList())
-    }
-}
- */

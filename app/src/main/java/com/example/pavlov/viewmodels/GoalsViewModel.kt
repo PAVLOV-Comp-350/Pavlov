@@ -37,11 +37,18 @@ class GoalsViewModel(
             }
             is GoalsEvent.MarkGoalComplete -> {
                 // NOTE(Devin): Temporary until we have a better way to mark goal completion
-                val newCompleted = _state.value.completedGoals.toMutableMap()
-                newCompleted[event.goalId] = true
-                _state.update {
-                    it.copy(completedGoals = newCompleted.toMap())
-                }
+                val updatedCompletedGoals = _state.value.completedGoals.toMutableMap()
+                val isComplete = updatedCompletedGoals[event.goalId] ?: false
+
+                //toggle completion status
+                updatedCompletedGoals[event.goalId] = !isComplete
+
+                val newTreats = if (!isComplete) _state.value.totalTreats + 1 else _state.value.totalTreats
+
+                _state.value = _state.value.copy(
+                    completedGoals = updatedCompletedGoals,
+                    totalTreats = newTreats
+                )
 
                 val activity = Activity(
                     goalId = event.goalId,

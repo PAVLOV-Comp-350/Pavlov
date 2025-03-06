@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import android.content.Context
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -19,6 +20,10 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.clickable
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Data
+import java.util.concurrent.TimeUnit
 
 /**
  * Data class for the Goal model
@@ -127,7 +132,8 @@ fun GoalsListScreen(
                             fallingTreats = fallingTreats.toMutableList().apply {
                                 set(index, Pair(startX, true)) // Mark as collected
                             }
-                        }
+                        },
+                        onTreatEarned = onTreatEarned
                     )
                 }
             }
@@ -234,7 +240,8 @@ fun GoalItem(
 @Composable
 fun FallingTreat(
     startX: Float,
-    onCollected: () -> Unit
+    onCollected: () -> Unit,
+    onTreatEarned: () -> Unit
 ) {
     var isCollected by remember { mutableStateOf(false) }
     val treatY = remember { Animatable(0f) } // Explicitly setting Float type
@@ -262,6 +269,7 @@ fun FallingTreat(
                 .clickable {
                     isCollected = true
                     onCollected()
+                    onTreatEarned()
                 },
             tint = Color(0xFFFFD700) // Gold color
         )
@@ -299,3 +307,70 @@ fun EmptyGoalsDisplay(modifier: Modifier = Modifier) {
         }
     }
 }
+
+fun scheduleGoalReminder(context: Context, goal: Goal, delayMinutes: Long) {
+    val workManager = WorkManager.getInstance(context)
+
+    val data = Data.Builder()
+        .putString("goal_title", goal.title)
+        .build()
+
+    val reminderRequest = OneTimeWorkRequestBuilder<GoalReminderWorker>()
+        .setInputData(data)
+        .setInitialDelay(delayMinutes, TimeUnit.MINUTES) // Delay before notification
+        .build()
+
+    workManager.enqueue(reminderRequest)
+}
+
+
+/**
+ * Preview of the goals list screen.
+
+@Preview(showBackground = true)
+@Composable
+fun GoalsListScreenPreview() {
+MaterialTheme {
+GoalsListScreen(
+goals = listOf(
+Goal(
+id = "1",
+title = "Morning Meditation",
+description = "15 minutes of mindfulness meditation",
+streak = 5
+),
+Goal(
+id = "2",
+title = "Exercise",
+description = "30 minutes of cardio",
+isCompleted = true,
+streak = 12
+),
+Goal(
+id = "3",
+title = "Read",
+description = "Read 20 pages of current book",
+streak = 3
+),
+Goal(
+id = "4",
+title = "Drink Water",
+description = "Drink 8 glasses of water",
+streak = 7
+)
+)
+)
+}
+}
+
+/**
+ * Preview of the empty state for the goals list screen.
+*/
+@Preview(showBackground = true)
+@Composable
+fun EmptyGoalsListScreenPreview() {
+MaterialTheme {
+GoalsListScreen(goals = emptyList())
+}
+}
+ */

@@ -1,10 +1,11 @@
 plugins {
-    alias(libs.plugins.android.application)
+    id("com.android.application")  // ✅ Only declare this once
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("androidx.room")
 }
+
 
 room {
     schemaDirectory("$projectDir/schemas")

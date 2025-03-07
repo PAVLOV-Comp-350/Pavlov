@@ -11,11 +11,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.pavlov.PavlovApplication
 import com.example.pavlov.theme.ThemeSwitch
 import com.example.pavlov.models.Goal
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import com.example.pavlov.R
+
 
 
 /**
@@ -56,8 +62,24 @@ fun GoalsListScreen(
                     }
                 },
                 actions = {
-                    // Empty actions area to balance the layout
-                    Spacer(modifier = Modifier.width(72.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 16.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.dog_treat),
+                            contentDescription = "Total Treats",
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${state.totalTreats}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             )
         },
@@ -86,6 +108,29 @@ fun GoalsListScreen(
         }
     }
 }
+@Composable
+fun TreatsTracker(totalTreats: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .padding(end = 16.dp)
+            .wrapContentSize(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.dog_treat), // ⭐ Icon representing treats
+            contentDescription = "Treats",
+            tint = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = totalTreats.toString(),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onPrimary
+        )
+    }
+}
+
+
 
 /**
  * Shows all the goals in a scrollable list

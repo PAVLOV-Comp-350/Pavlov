@@ -74,7 +74,7 @@ fun GoalsListScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "${state.totalTreats}",
+                            text = "${state.treats}",
                             style = MaterialTheme.typography.bodyLarge,
                             fontSize = 20.sp,
                             color = MaterialTheme.colorScheme.onPrimary

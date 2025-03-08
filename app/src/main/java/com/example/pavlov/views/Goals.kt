@@ -12,16 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.pavlov.PavlovApplication
 import com.example.pavlov.theme.ThemeSwitch
 import com.example.pavlov.models.Goal
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import com.example.pavlov.R
-
+import com.example.pavlov.viewmodels.GoalsViewModel
 
 
 /**
@@ -34,7 +32,7 @@ import com.example.pavlov.R
 @Composable
 fun GoalsListScreen(
     state: GoalsState,
-    onEvent: (GoalsEvent) -> Unit,
+    onEvent: (GoalsEvent) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -85,7 +83,7 @@ fun GoalsListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onEvent(GoalsEvent.AddGoal) },
+                onClick = {onEvent(GoalsEvent.ShowAddGoalAlert)}, //The event listener triggers the value of the showPopup GoalState as "True"
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
@@ -106,6 +104,18 @@ fun GoalsListScreen(
                 modifier = Modifier.padding(paddingValues)
             )
         }
+    }
+
+    //If statement is used to trigger GoalAddPopup() and allowing the Popup to close when the showPopup value is set to "False"
+    if (state.showPopup){
+        GoalAddPopup(
+            onDismiss = {onEvent(GoalsEvent.HideAddGoalAlert)},
+            onConfirm = { id, title, description, streak ->
+                onEvent(GoalsEvent.ConfirmAddGoal(id, title, description, streak))
+            }
+        )
+    } else{
+        onEvent(GoalsEvent.HideAddGoalAlert)
     }
 }
 @Composable

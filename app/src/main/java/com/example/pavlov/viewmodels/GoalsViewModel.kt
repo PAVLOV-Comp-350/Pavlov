@@ -1,16 +1,17 @@
 package com.example.pavlov.viewmodels
 
-import android.util.Log
+
+import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pavlov.models.Activity
 import com.example.pavlov.models.ActivityDao
+import com.example.pavlov.models.Goal
 import com.example.pavlov.models.GoalDao
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
@@ -32,9 +33,32 @@ class GoalsViewModel(
 
     fun onEvent(event: GoalsEvent) {
         when(event) {
-            GoalsEvent.AddGoal -> {
-                Log.d("TODO:", "Implement Adding goals")
+            /**Divided the AddGoal event into 3-different events
+             * the show/hide events will the popup while
+             * the Confirm event will pass the new goal into the database
+              */
+            GoalsEvent.ShowAddGoalAlert -> {
+                _state.value = _state.value.copy(
+                    showPopup = true
+                )
             }
+
+            is GoalsEvent.ConfirmAddGoal -> {
+                val newGoal = Goal(event.id, event.title, event.description, event.streak)
+                viewModelScope.launch {
+                    goalDao.addOrUpdateGoal(newGoal)
+                }
+                _state.value = _state.value.copy(
+                    showPopup = false
+                )
+            }
+
+            GoalsEvent.HideAddGoalAlert -> {
+                _state.value = _state.value.copy(
+                    showPopup = false
+                )
+            }
+
             is GoalsEvent.MarkGoalComplete -> {
                 // NOTE(Devin): Temporary until we have a better way to mark goal completion
                 val updatedCompletedGoals = _state.value.completedGoals.toMutableMap()

@@ -6,6 +6,8 @@ package com.example.pavlov.viewmodels
 sealed interface GoalsEvent {
     // TODO: This should actually be broken into a few UI interactions.
     //  Something like ShowAddGoalDialog, HideAddGoalDialog, and SaveNewGoal
-    data object AddGoal : GoalsEvent
+    data object ShowAddGoalAlert : GoalsEvent
+    data object HideAddGoalAlert : GoalsEvent
     data class MarkGoalComplete(val goalId: Int) : GoalsEvent
+    data class ConfirmAddGoal(val id: Int, val title: String, val description: String, val streak: Int) : GoalsEvent
 }

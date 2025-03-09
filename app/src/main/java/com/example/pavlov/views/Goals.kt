@@ -1,6 +1,5 @@
 package com.example.pavlov.views
 
-import android.media.MediaDrm.OnEventListener
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,8 +19,6 @@ import com.example.pavlov.viewmodels.GoalsState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import com.example.pavlov.R
-import com.example.pavlov.viewmodels.GoalsViewModel
-
 
 /**
  * Main screen for showing all the goals

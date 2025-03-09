@@ -33,10 +33,7 @@ class GoalsViewModel(
 
     fun onEvent(event: GoalsEvent) {
         when(event) {
-            /**Divided the AddGoal event into 3-different events
-             * the show/hide events will the popup while
-             * the Confirm event will pass the new goal into the database
-              */
+
             GoalsEvent.ShowAddGoalAlert -> {
                 _state.value = _state.value.copy(
                     showPopup = true

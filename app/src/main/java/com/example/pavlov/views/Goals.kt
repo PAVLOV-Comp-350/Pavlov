@@ -1,5 +1,6 @@
 package com.example.pavlov.views
 
+import android.media.MediaDrm.OnEventListener
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -109,10 +110,10 @@ fun GoalsListScreen(
     //If statement is used to trigger GoalAddPopup() and allowing the Popup to close when the showPopup value is set to "False"
     if (state.showPopup){
         GoalAddPopup(
-            onDismiss = {onEvent(GoalsEvent.HideAddGoalAlert)},
-            onConfirm = { id, title, description, streak ->
-                onEvent(GoalsEvent.ConfirmAddGoal(id, title, description, streak))
-            }
+            onDismiss = { onEvent(GoalsEvent.HideAddGoalAlert) },
+            onConfirm = { onEvent(GoalsEvent.ConfirmAddGoal) },
+            state = state,
+            onEvent = onEvent
         )
     } else{
         onEvent(GoalsEvent.HideAddGoalAlert)

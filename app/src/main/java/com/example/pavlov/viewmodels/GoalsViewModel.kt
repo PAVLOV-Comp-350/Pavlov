@@ -43,8 +43,32 @@ class GoalsViewModel(
                 )
             }
 
+            is GoalsEvent.SetGoalId -> {
+                    _state.value = _state.value.copy(
+                        newGoalId = event.id
+                    )
+            }
+
+            is GoalsEvent.SetGoalTitle -> {
+                _state.value = _state.value.copy(
+                    newGoalTitle = event.title
+                )
+            }
+
+            is GoalsEvent.SetGoalDescription -> {
+                _state.value = _state.value.copy(
+                    newGoalDescription = event.description
+                )
+            }
+
+            is GoalsEvent.SetGoalStreak -> {
+                _state.value = _state.value.copy(
+                    newGoalStreak = event.streak
+                )
+            }
+
             is GoalsEvent.ConfirmAddGoal -> {
-                val newGoal = Goal(event.id, event.title, event.description, event.streak)
+                val newGoal = Goal(_state.value.newGoalId, _state.value.newGoalTitle, _state.value.newGoalDescription, _state.value.newGoalStreak)
                 viewModelScope.launch {
                     goalDao.addOrUpdateGoal(newGoal)
                 }

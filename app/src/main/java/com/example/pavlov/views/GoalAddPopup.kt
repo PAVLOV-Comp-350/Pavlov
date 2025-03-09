@@ -6,11 +6,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import com.example.pavlov.viewmodels.GoalsEvent
+import com.example.pavlov.viewmodels.GoalsState
 
 /**
  * Added this separate file for the @Composable used for the alert dialog
@@ -18,13 +15,10 @@ import com.example.pavlov.viewmodels.GoalsEvent
 @Composable
 fun GoalAddPopup(
     onDismiss: () -> Unit,
-    onConfirm: (Int, String, String, Int) -> Unit,
+    onConfirm: () -> Unit,
+    state: GoalsState,
+    onEvent: (GoalsEvent) -> Unit
 ) {
-    //Allocates the values which will be used to populate the new goal.
-    val id: Int = 0
-    var goalTitle by remember { mutableStateOf("") }
-    var goalDescription by remember { mutableStateOf("") }
-    val streak: Int = 0
 
     //used an AlertDialog as it comes with pre-made buttons
     AlertDialog(
@@ -33,22 +27,22 @@ fun GoalAddPopup(
         text = {
             Column {
                 OutlinedTextField(
-                    value = goalTitle,
-                    onValueChange = { goalTitle = it },
+                    value = state.newGoalTitle,
+                    onValueChange = { onEvent(GoalsEvent.SetGoalTitle(it)) },
                     label = { Text("Goal Title") }
                 )
 
                 OutlinedTextField(
-                    value = goalDescription,
-                    onValueChange = { goalDescription = it },
+                    value = state.newGoalDescription,
+                    onValueChange = { onEvent(GoalsEvent.SetGoalDescription(it)) },
                     label = { Text("Goal Description") }
                 )
             }
         },
         confirmButton = {
             Button(onClick = {
-                if (goalTitle.isNotBlank() && goalDescription.isNotBlank()) {
-                    onConfirm(id, goalTitle, goalDescription, streak)
+                if (state.newGoalTitle.isNotBlank() && state.newGoalDescription.isNotBlank()) {
+                    onConfirm()
                 }
             }) {
                 Text("Add Goal")

@@ -8,5 +8,9 @@ data class GoalsState(
     //  of goals. For now we will just mock this information for demo purposes.
     val completedGoals: Map<Int, Boolean> = emptyMap(),
     val totalTreats: Int = 0,
-    var showPopup: Boolean = false
+    var showPopup: Boolean = false,
+    var newGoalId: Int = 0,
+    var newGoalTitle: String = "",
+    var newGoalDescription: String = "",
+    var newGoalStreak: Int = 0
 )

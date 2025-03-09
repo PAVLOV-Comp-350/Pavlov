@@ -43,6 +43,11 @@ class GoalsViewModel(
                 )
             }
 
+            /** Potential to be redundant, as Id's for goals are auto-generated. Would also need to remove/modify '*'
+             *  line 11 in GoalsEvent:     data class SetGoalId(val id: Int) : GoalsEvent*
+             *  line 12 in GoalsState:     var newGoalId: Int = 0,*
+             *  line 76 in this file:      val newGoal = Goal(_state.value.newGoalId*, _state.value.newGoalTitle, _state.value.newGoalDescription, _state.value.newGoalStreak)
+             */
             is GoalsEvent.SetGoalId -> {
                     _state.value = _state.value.copy(
                         newGoalId = event.id

@@ -3,6 +3,7 @@ package com.example.pavlov.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pavlov.PavlovApplication
 import com.example.pavlov.models.Activity
 import com.example.pavlov.models.ActivityDao
 import com.example.pavlov.models.GoalDao
@@ -23,9 +24,10 @@ class GoalsViewModel(
     private val _state = MutableStateFlow(GoalsState())
     // Consumers of the GoalViewModel API subscribe to this StateFlow
     // to receive update to the UI state
-    val state = combine(_state, goalDao.getAllGoals()) { state, goals -> Unit
+    val state = combine(_state, goalDao.getAllGoals(), PavlovApplication.treats) { state, goals, treats -> Unit
             state.copy(
-                goals = goals
+                goals = goals,
+                treats = treats
             )
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GoalsState())
@@ -43,11 +45,10 @@ class GoalsViewModel(
                 //toggle completion status
                 updatedCompletedGoals[event.goalId] = !isComplete
 
-                val newTreats = if (!isComplete) _state.value.totalTreats + 1 else _state.value.totalTreats
+                PavlovApplication.addTreats(1)
 
                 _state.value = _state.value.copy(
                     completedGoals = updatedCompletedGoals,
-                    totalTreats = newTreats
                 )
 
                 val activity = Activity(

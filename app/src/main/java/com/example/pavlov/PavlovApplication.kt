@@ -8,6 +8,7 @@ import androidx.preference.PreferenceManager
 import com.example.pavlov.models.LocalDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 /**
  * We are overriding the base Application class to manage the global state of the Room db
@@ -38,6 +39,22 @@ class PavlovApplication : Application() {
             preferences.edit().putBoolean(DARK_MODE_KEY, value).apply()
             _isDarkTheme.value = value
         }
+
+        // TODO: This should be more robust once we have more UserState
+        /** The retrieval key to access the treats property */
+        private val TREATS_KEY = "user_treats"
+        private val _treats = MutableStateFlow<Int>(0)
+        val treats = _treats.asStateFlow()
+        fun addTreats(value: Int) {
+            val newval = _treats.value + value
+            preferences.edit().putInt(TREATS_KEY, newval).apply()
+            _treats.update { newval }
+        }
+        fun removeTreats(value: Int) {
+            val newval = _treats.value - value
+            preferences.edit().putInt(TREATS_KEY, newval).apply()
+            _treats.update { newval }
+        }
     }
 
     override fun onCreate() {
@@ -54,6 +71,7 @@ class PavlovApplication : Application() {
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this)
         _isDarkTheme.value = preferences.getBoolean(DARK_MODE_KEY, false)
+        _treats.value = preferences.getInt(TREATS_KEY, 0)
     }
 
 }

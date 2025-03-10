@@ -3,6 +3,7 @@ package com.example.pavlov.models
 import androidx.room.TypeConverter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.time.Duration
 
 /**
  * This Is where we serialize and deserialize more complex datatypes like Timestamps into simpler
@@ -19,5 +20,23 @@ class Converters {
 
     @TypeConverter fun dateToTimestamp(date: LocalDateTime?): String? {
         return date?.format(formatter)
+    }
+
+    @TypeConverter fun durationToIsoString(duration: Duration?): String? {
+        return duration?.toIsoString()
+    }
+
+    @TypeConverter fun IsoStringToDuration(value: String?): Duration? {
+        val v = value ?: "Invalid"
+        return Duration.parseIsoStringOrNull(v)
+    }
+
+    @TypeConverter fun GoalFrequencyToInt(frequency: GoalFrequency?): Int? {
+        return frequency?.ordinal
+    }
+
+    @TypeConverter fun IntToGoalFrequency(v: Int?): GoalFrequency? {
+        if (v == null) return null
+        return GoalFrequency.entries[v]
     }
 }

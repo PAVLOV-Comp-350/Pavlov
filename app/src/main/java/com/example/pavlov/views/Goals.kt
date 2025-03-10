@@ -85,7 +85,7 @@ fun GoalsListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onEvent(GoalsEvent.AddGoal) },
+                onClick = { onEvent(GoalsEvent.ShowAddGoalAlert) },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
@@ -106,6 +106,18 @@ fun GoalsListScreen(
                 modifier = Modifier.padding(paddingValues)
             )
         }
+    }
+
+    //If statement is used to trigger GoalAddPopup() and allowing the Popup to close when the showPopup value is set to "False"
+    if (state.showPopup){
+        GoalAddPopup(
+            onDismiss = { onEvent(GoalsEvent.HideAddGoalAlert) },
+            onConfirm = { onEvent(GoalsEvent.ConfirmAddGoal) },
+            state = state,
+            onEvent = onEvent
+        )
+    } else{
+        onEvent(GoalsEvent.HideAddGoalAlert)
     }
 }
 @Composable

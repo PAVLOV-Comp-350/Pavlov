@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pavlov.PavlovApplication
 import com.example.pavlov.models.Activity
 import com.example.pavlov.models.ActivityDao
+import com.example.pavlov.models.Goal
 import com.example.pavlov.models.GoalDao
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,9 +35,47 @@ class GoalsViewModel(
 
     fun onEvent(event: GoalsEvent) {
         when(event) {
-            GoalsEvent.AddGoal -> {
-                Log.d("TODO:", "Implement Adding goals")
+
+            GoalsEvent.ShowAddGoalAlert -> {
+                _state.value = _state.value.copy(
+                    showPopup = true
+                )
             }
+
+            is GoalsEvent.SetGoalTitle -> {
+                _state.value = _state.value.copy(
+                    newGoalTitle = event.title
+                )
+            }
+
+            is GoalsEvent.SetGoalDescription -> {
+                _state.value = _state.value.copy(
+                    newGoalDescription = event.description
+                )
+            }
+
+            is GoalsEvent.SetGoalStreak -> {
+                _state.value = _state.value.copy(
+                    newGoalStreak = event.streak
+                )
+            }
+
+            is GoalsEvent.ConfirmAddGoal -> {
+                val newGoal = Goal(_state.value.newGoalId, _state.value.newGoalTitle , _state.value.newGoalDescription, _state.value.newGoalStreak, _state.value.newGoalFrequency, _state.value.newGoalSimple, _state.value.newGoalUnit, _state.value.newGoalCurrent, _state.value.newGoalTarget)
+                viewModelScope.launch {
+                    goalDao.addOrUpdateGoal(newGoal)
+                }
+                _state.value = _state.value.copy(
+                    showPopup = false
+                )
+            }
+
+            GoalsEvent.HideAddGoalAlert -> {
+                _state.value = _state.value.copy(
+                    showPopup = false
+                )
+            }
+
             is GoalsEvent.MarkGoalComplete -> {
                 // NOTE(Devin): Temporary until we have a better way to mark goal completion
                 val updatedCompletedGoals = _state.value.completedGoals.toMutableMap()

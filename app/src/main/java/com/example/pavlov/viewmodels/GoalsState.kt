@@ -1,6 +1,7 @@
 package com.example.pavlov.viewmodels
 
 import com.example.pavlov.models.Goal
+import com.example.pavlov.models.GoalFrequency
 
 data class GoalsState(
     val goals: List<Goal> = emptyList(),
@@ -8,4 +9,14 @@ data class GoalsState(
     //  of goals. For now we will just mock this information for demo purposes.
     val completedGoals: Map<Int, Boolean> = emptyMap(),
     val treats: Int = 0,
+    var showPopup: Boolean = false,
+    var newGoalId: Int = 0,
+    var newGoalTitle: String = "",
+    var newGoalDescription: String = "",
+    var newGoalStreak: Int = 0,
+    var newGoalFrequency: GoalFrequency = GoalFrequency.DAILY,
+    var newGoalSimple: Boolean = false,
+    var newGoalUnit: String = "No unit",
+    var newGoalCurrent: Int = 0,
+    var newGoalTarget: Int = 0
 )

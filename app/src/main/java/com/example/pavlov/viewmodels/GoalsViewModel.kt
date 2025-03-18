@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.pavlov.PavlovApplication
 import com.example.pavlov.models.Activity
 import com.example.pavlov.models.ActivityDao
+import com.example.pavlov.models.DaysOfWeek
 import com.example.pavlov.models.Goal
 import com.example.pavlov.models.GoalDao
+import com.example.pavlov.models.GoalFrequency
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -38,7 +40,19 @@ class GoalsViewModel(
 
             GoalsEvent.ShowAddGoalAlert -> {
                 _state.value = _state.value.copy(
-                    showPopup = true
+                    showPopup = true,
+                    isEditMode = false,
+                    newGoalId = 0,
+                    newGoalTitle = "",
+                    newGoalDescription = "",
+                    newGoalStreak = 0,
+                    newGoalFrequency = GoalFrequency.DAILY,
+                    newGoalSimple = false,
+                    newGoalUnit = "No unit",
+                    newGoalCurrent = 0,
+                    newGoalTarget = 0,
+                    newGoalActiveDays = 0,
+                    newGoalScheduledTimeMinutes = 540,
                 )
             }
 
@@ -60,8 +74,27 @@ class GoalsViewModel(
                 )
             }
 
+            is GoalsEvent.ToggleGoalDay -> {
+                val updatedDays = DaysOfWeek.toggleDay(_state.value.newGoalActiveDays, event.day)
+                _state.value = _state.value.copy(
+                    newGoalActiveDays = updatedDays
+                )
+            }
+
             is GoalsEvent.ConfirmAddGoal -> {
-                val newGoal = Goal(_state.value.newGoalId, _state.value.newGoalTitle , _state.value.newGoalDescription, _state.value.newGoalStreak, _state.value.newGoalFrequency, _state.value.newGoalSimple, _state.value.newGoalUnit, _state.value.newGoalCurrent, _state.value.newGoalTarget)
+                val newGoal = Goal(
+                    id =_state.value.newGoalId,
+                    title = _state.value.newGoalTitle,
+                    description = _state.value.newGoalDescription,
+                    streak = _state.value.newGoalStreak,
+                    frequency = _state.value.newGoalFrequency,
+                    simple =_state.value.newGoalSimple,
+                    unit = _state.value.newGoalUnit,
+                    current = _state.value.newGoalCurrent,
+                    target = _state.value.newGoalTarget,
+                    activeDays = _state.value.newGoalActiveDays,
+                    scheduledTimeMinutes = _state.value.newGoalScheduledTimeMinutes
+                )
                 viewModelScope.launch {
                     goalDao.addOrUpdateGoal(newGoal)
                 }
@@ -74,6 +107,35 @@ class GoalsViewModel(
                 _state.value = _state.value.copy(
                     showPopup = false
                 )
+            }
+            is GoalsEvent.ShowEditGoalAlert -> {
+                val goalToEdit = state.value.goals.find { it.id == event.goalId }
+                goalToEdit?.let {
+                    _state.value = _state.value.copy(
+                        showPopup = true,
+                        isEditMode = true,
+                        newGoalId = goalToEdit.id,
+                        newGoalTitle = goalToEdit.title,
+                        newGoalDescription = goalToEdit.description,
+                        newGoalStreak = goalToEdit.streak,
+                        newGoalFrequency = goalToEdit.frequency,
+                        newGoalSimple = goalToEdit.simple,
+                        newGoalUnit = goalToEdit.unit,
+                        newGoalCurrent = goalToEdit.current,
+                        newGoalTarget = goalToEdit.target,
+                        newGoalActiveDays = goalToEdit.activeDays,
+                        newGoalScheduledTimeMinutes = goalToEdit.scheduledTimeMinutes
+                    )
+                }
+            }
+
+            is GoalsEvent.DeleteGoal -> {
+                val goalToDelete = state.value.goals.find { it.id == event.goalId }
+                if (goalToDelete != null) {
+                    viewModelScope.launch {
+                        goalDao.removeGoal(goalToDelete)
+                    }
+                }
             }
 
             is GoalsEvent.MarkGoalComplete -> {
@@ -97,6 +159,25 @@ class GoalsViewModel(
                 viewModelScope.launch {
                     activityDao.insertActivity(activity)
                 }
+            }
+
+            GoalsEvent.ShowTimePicker -> {
+                _state.value = _state.value.copy(
+                    showTimePickerDialog = true
+                )
+            }
+
+            GoalsEvent.HideTimePicker -> {
+                _state.value = _state.value.copy(
+                    showTimePickerDialog = false
+                )
+            }
+
+            is GoalsEvent.SetScheduledTime -> {
+                _state.value = _state.value.copy(
+                    newGoalScheduledTimeMinutes = event.minutes,
+                    showTimePickerDialog = false
+                )
             }
         }
     }

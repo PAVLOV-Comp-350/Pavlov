@@ -67,6 +67,7 @@ class PavlovApplication : Application() {
             "pavlov_db"
         )
             .createFromAsset("database/test_data.db")
+            .fallbackToDestructiveMigration() //Delete this if causes issues
             .build()
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this)

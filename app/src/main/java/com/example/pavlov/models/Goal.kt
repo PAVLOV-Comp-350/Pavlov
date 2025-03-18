@@ -29,6 +29,10 @@ data class Goal(
     @ColumnInfo(defaultValue = "0") val current: Int,
     /** The target amount of the unit that satisfies the goal */
     @ColumnInfo(defaultValue = "0") val target: Int,
+    /** Days of the week goal is active */
+    @ColumnInfo(defaultValue = "127") val activeDays: Int = 127, // Default to all days (1111111 in binary)
+    /** Scheduled time for the task */
+    @ColumnInfo(defaultValue = "540") val scheduledTimeMinutes: Int = 540,
 )
 
 /**

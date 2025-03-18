@@ -10,6 +10,7 @@ data class GoalsState(
     val completedGoals: Map<Int, Boolean> = emptyMap(),
     val treats: Int = 0,
     var showPopup: Boolean = false,
+    var isEditMode: Boolean = false,
     var newGoalId: Int = 0,
     var newGoalTitle: String = "",
     var newGoalDescription: String = "",
@@ -18,5 +19,8 @@ data class GoalsState(
     var newGoalSimple: Boolean = false,
     var newGoalUnit: String = "No unit",
     var newGoalCurrent: Int = 0,
-    var newGoalTarget: Int = 0
+    var newGoalTarget: Int = 0,
+    var newGoalActiveDays: Int = 127,
+    var newGoalScheduledTimeMinutes: Int = 540,
+    var showTimePickerDialog: Boolean = false
 )

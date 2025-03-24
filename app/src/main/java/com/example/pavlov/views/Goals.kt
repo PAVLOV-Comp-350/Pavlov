@@ -12,12 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
+import com.example.pavlov.models.DaysOfWeek
 import com.example.pavlov.PavlovApplication
 import com.example.pavlov.theme.ThemeSwitch
 import com.example.pavlov.models.Goal
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import com.example.pavlov.R
@@ -164,7 +167,7 @@ fun GoalsList(
             GoalItem(
                 goal = goal,
                 completed = completedGoals[goal.id] ?: false,
-                onEvent = { onEvent(GoalsEvent.MarkGoalComplete(goal.id)) },
+                onEvent = onEvent,
             )
         }
     }
@@ -231,13 +234,91 @@ fun GoalItem(
                 // Show streak if available
                 if (goal.streak > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Streak: ${goal.streak} days",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.secondary
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Streak: ${goal.streak} days",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        val hours = goal.scheduledTimeMinutes / 60
+                        val minutes = goal.scheduledTimeMinutes % 60
+                        val displayHours = when {
+                            hours == 0 -> 12
+                            hours > 12 -> hours - 12
+                            else -> hours
+                        }
+                        val period = if (hours < 12) "AM" else "PM"
+                        val timeString = String.format("%d:%02d %s", displayHours, minutes, period)
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "• $timeString",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+                    //Display active days as small indicators
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Days: ",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        DayDot("M", DaysOfWeek.MONDAY, goal.activeDays)
+                        DayDot("T", DaysOfWeek.TUESDAY, goal.activeDays)
+                        DayDot("W", DaysOfWeek.WEDNESDAY, goal.activeDays)
+                        DayDot("TH", DaysOfWeek.THURSDAY, goal.activeDays)
+                        DayDot("F", DaysOfWeek.FRIDAY, goal.activeDays)
+                        DayDot("Sa", DaysOfWeek.SATURDAY, goal.activeDays)
+                        DayDot("Su", DaysOfWeek.SUNDAY, goal.activeDays)
+                    }
+
+            }
+
+            // Action buttons
+            Row {
+                IconButton(onClick = { onEvent(GoalsEvent.ShowEditGoalAlert(goal.id)) }) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit goal",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DayDot(
+    dayLabel: String,
+    dayFlag: Int,
+    activeDays: Int
+) {
+    val isActive = DaysOfWeek.isDayActive(activeDays, dayFlag)
+
+    Surface(
+        modifier = Modifier.size(18.dp),
+        shape = androidx.compose.foundation.shape.CircleShape,
+        // Use primary color for active days, muted color for inactive days
+        color = if (isActive) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = dayLabel,
+                style = MaterialTheme.typography.labelSmall,
+                // Use onPrimary for active days, muted onSurface for inactive days
+                color = if (isActive) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
         }
     }
 }
@@ -269,54 +350,3 @@ fun EmptyGoalsDisplay(modifier: Modifier = Modifier) {
         }
     }
 }
-
-/**
- * Preview of the goals list screen.
-
-@Preview(showBackground = true)
-@Composable
-fun GoalsListScreenPreview() {
-    MaterialTheme {
-        GoalsListScreen(
-            goals = listOf(
-                Goal(
-                    id = "1",
-                    title = "Morning Meditation",
-                    description = "15 minutes of mindfulness meditation",
-                    streak = 5
-                ),
-                Goal(
-                    id = "2",
-                    title = "Exercise",
-                    description = "30 minutes of cardio",
-                    isCompleted = true,
-                    streak = 12
-                ),
-                Goal(
-                    id = "3",
-                    title = "Read",
-                    description = "Read 20 pages of current book",
-                    streak = 3
-                ),
-                Goal(
-                    id = "4",
-                    title = "Drink Water",
-                    description = "Drink 8 glasses of water",
-                    streak = 7
-                )
-            )
-        )
-    }
-}
-
-/**
- * Preview of the empty state for the goals list screen.
- */
-@Preview(showBackground = true)
-@Composable
-fun EmptyGoalsListScreenPreview() {
-    MaterialTheme {
-        GoalsListScreen(goals = emptyList())
-    }
-}
- */

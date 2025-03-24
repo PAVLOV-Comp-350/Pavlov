@@ -12,5 +12,11 @@ sealed interface GoalsEvent {
     data class SetGoalTitle(val title: String) : GoalsEvent
     data class SetGoalDescription(val description: String) : GoalsEvent
     data class SetGoalStreak(val streak: Int): GoalsEvent
+    data class ToggleGoalDay(val day: Int): GoalsEvent
     data object ConfirmAddGoal : GoalsEvent
+    data class ShowEditGoalAlert(val goalId: Int) : GoalsEvent
+    data class DeleteGoal(val goalId: Int) : GoalsEvent
+    data object ShowTimePicker : GoalsEvent
+    data object HideTimePicker : GoalsEvent
+    data class SetScheduledTime(val minutes: Int) : GoalsEvent
 }

@@ -38,7 +38,8 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = OffWhite,
     onSurface = OffWhite,
     surfaceVariant = MediumGrey,
-    onSurfaceVariant = Color(0xFFD0D0D0)
+    onSurfaceVariant = Color(0xFFD0D0D0),
+    error = Color(0xFFF44336)
 )
 
 // Light color scheme

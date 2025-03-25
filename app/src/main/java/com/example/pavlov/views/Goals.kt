@@ -21,10 +21,14 @@ import com.example.pavlov.models.Goal
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import com.example.pavlov.R
-
+import com.example.pavlov.viewmodels.SharedState
 
 
 /**
@@ -37,55 +41,12 @@ import com.example.pavlov.R
 @Composable
 fun GoalsListScreen(
     state: GoalsState,
+    sharedState: SharedState,
     onEvent: (GoalsEvent) -> Unit,
+    onNavigate: (Screen) -> Unit,
 ) {
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "Pavlov",
-                            style = MaterialTheme.typography.headlineMedium,
-                            // Bolded
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                navigationIcon = {
-                    Box(modifier = Modifier.padding(start = 16.dp)) {
-                        ThemeSwitch()
-                    }
-                },
-                actions = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 16.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.dog_treat),
-                            contentDescription = "Total Treats",
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${state.treats}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontSize = 20.sp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
-            )
-        },
+        topBar = { PavlovTopBar(sharedState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEvent(GoalsEvent.ShowAddGoalAlert) },
@@ -96,7 +57,8 @@ fun GoalsListScreen(
                     contentDescription = "Add Goal"
                 )
             }
-        }
+        },
+        bottomBar = { PavlovNavbar(activeScreen = sharedState.activeScreen, onNavigate = onNavigate) },
     ) { paddingValues ->
         if (state.goals.isEmpty()) {
             EmptyGoalsDisplay(modifier = Modifier.padding(paddingValues))

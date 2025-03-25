@@ -27,10 +27,9 @@ class GoalsViewModel(
     private val _state = MutableStateFlow(GoalsState())
     // Consumers of the GoalViewModel API subscribe to this StateFlow
     // to receive update to the UI state
-    val state = combine(_state, goalDao.getAllGoals(), PavlovApplication.treats) { state, goals, treats -> Unit
+    val state = combine(_state, goalDao.getAllGoals()) { state, goals -> Unit
             state.copy(
                 goals = goals,
-                treats = treats
             )
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GoalsState())

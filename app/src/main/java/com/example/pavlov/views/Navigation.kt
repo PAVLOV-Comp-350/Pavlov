@@ -1,8 +1,10 @@
 package com.example.pavlov.views
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Badge
@@ -12,7 +14,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -28,12 +29,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.pavlov.PavlovApplication
+import com.example.pavlov.viewmodels.CasinoViewModel
 import com.example.pavlov.viewmodels.GoalsViewModel
 import com.example.pavlov.viewmodels.SettingsViewModel
 import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.Serializable
 
 @Serializable object MainRoute
@@ -43,6 +43,8 @@ sealed interface Screen {
     data object Goals : Screen
     @Serializable
     data object Settings : Screen
+    @Serializable
+    data object Casino : Screen
 }
 
 
@@ -106,6 +108,23 @@ fun PavlovNavHost(
                 )
 
             }
+            composable<Screen.Casino> { entry ->
+                val sharedViewModel = entry.sharedViewModel<SharedViewModel>(navController)
+                val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
+
+                val casinoViewModel = viewModel(CasinoViewModel::class)
+                val casinoState by casinoViewModel.state.collectAsState()
+                CasinoScreen(
+                    state = casinoState,
+                    sharedState = sharedState,
+                    onEvent = { casinoViewModel.onEvent(it) },
+                    onNavigate = {
+                        navController.navigate(it)
+                        sharedViewModel.onEvent(SharedEvent.SetScreen(it))
+                    }
+                )
+
+            }
         }
     }
 }
@@ -132,6 +151,13 @@ fun PavlovNavbar(
             unselectedIcon = Icons.Outlined.Home,
             hasNews = false,
             screenId = Screen.Goals
+        ),
+        BottomNavigationItem(
+            title = "Casino",
+            selectedIcon = Icons.Filled.AddCircle,
+            unselectedIcon = Icons.Outlined.AddCircle,
+            hasNews = false,
+            screenId = Screen.Casino
         ),
         BottomNavigationItem(
             title = "Settings",

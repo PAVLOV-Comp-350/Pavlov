@@ -10,6 +10,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import kotlin.math.max
 import kotlin.math.min
+import androidx.compose.ui.platform.LocalContext
+import com.example.pavlov.scheduleNotification
+
+
+
+
 
 /**
  * A time picker component that allows users to select hours and minutes
@@ -31,6 +37,9 @@ fun TimePickerDialog(
     }
 
     val initialIsAM = initialHours24 < 12
+
+    val context = LocalContext.current
+
 
     var hours12 by remember { mutableIntStateOf(initialHours12) }
     var minutes by remember { mutableIntStateOf(initialMins) }
@@ -178,6 +187,9 @@ fun TimePickerDialog(
 
                             val totalMinutes = hours24 * 60 + minutes
                             onTimeSelected(totalMinutes)
+
+                            // Schedule the notification here
+                            scheduleNotification(context, "Your Task", totalMinutes)
                         }
                     ) {
                         Text("Set")

@@ -54,7 +54,9 @@ private val LightColorScheme = lightColorScheme(
     onBackground = Color(0xFF1C1B1F),
     onSurface = Color(0xFF1C1B1F),
     surfaceVariant = Color(0xFFE4E4E4),
-    onSurfaceVariant = Color(0xFF444444)
+    onSurfaceVariant = Color(0xFF444444),
+    error = Color(0xFFF44336)
+
 )
 
 @Composable

@@ -1,0 +1,138 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 4,
+    "identityHash": "2b7355fa39cfbdff3065ed3f7e2e30c9",
+    "entities": [
+      {
+        "tableName": "goals",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `streak` INTEGER NOT NULL, `frequency` INTEGER NOT NULL DEFAULT 0, `simple` INTEGER NOT NULL DEFAULT FALSE, `unit` TEXT NOT NULL DEFAULT 'No Unit', `current` INTEGER NOT NULL DEFAULT 0, `target` INTEGER NOT NULL DEFAULT 0, `activeDays` INTEGER NOT NULL, `scheduledTimeMinutes` INTEGER NOT NULL DEFAULT 540)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "streak",
+            "columnName": "streak",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frequency",
+            "columnName": "frequency",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "simple",
+            "columnName": "simple",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "FALSE"
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'No Unit'"
+          },
+          {
+            "fieldPath": "current",
+            "columnName": "current",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "target",
+            "columnName": "target",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "activeDays",
+            "columnName": "activeDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledTimeMinutes",
+            "columnName": "scheduledTimeMinutes",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "540"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "activity_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goal_id` INTEGER NOT NULL, `completion_timestamp` TEXT NOT NULL, `completion_note` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goalId",
+            "columnName": "goal_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completionTimestamp",
+            "columnName": "completion_timestamp",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completionNote",
+            "columnName": "completion_note",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2b7355fa39cfbdff3065ed3f7e2e30c9')"
+    ]
+  }
+}

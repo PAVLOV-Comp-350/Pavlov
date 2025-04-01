@@ -2,6 +2,7 @@ package com.example.pavlov.models
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import java.time.LocalDateTime
 import kotlin.time.Duration
@@ -15,22 +16,22 @@ import kotlin.time.Duration
 data class Goal(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     /** Name of the Goal */
-    val title: String,
-    val description: String,
+    val title: String = "",
+    val description: String = "",
     /** Current count in days that a goal has been upheld */
-    val streak: Int,
+    val streak: Int = 0,
     /** How often the goal resets */
-    @ColumnInfo(defaultValue = "0") val frequency: GoalFrequency,
+    @ColumnInfo(defaultValue = "0") val frequency: GoalFrequency = GoalFrequency.DAILY,
     /** Is this a simple Yes/No goal*/
-    @ColumnInfo(defaultValue = "FALSE") val simple: Boolean,
+    @ColumnInfo(defaultValue = "FALSE") val simple: Boolean = false,
     /** The metric for tracking progress towards the goal e.g. minute, cups of water, etc... */
-    @ColumnInfo(defaultValue = "No Unit") val unit: String,
+    @ColumnInfo(defaultValue = "No Unit") val unit: String = "No Unit",
     /** The current amount of the unit */
-    @ColumnInfo(defaultValue = "0") val current: Int,
+    @ColumnInfo(defaultValue = "0") val current: Int = 0,
     /** The target amount of the unit that satisfies the goal */
-    @ColumnInfo(defaultValue = "0") val target: Int,
+    @ColumnInfo(defaultValue = "0") val target: Int = 0,
     /** Days of the week goal is active */
-    @ColumnInfo(defaultValue = "127") val activeDays: Int = 127, // Default to all days (1111111 in binary)
+    val activeDays: PavlovDaysOfWeek = PavlovDaysOfWeek.ALL_DAYS,
     /** Scheduled time for the task */
     @ColumnInfo(defaultValue = "540") val scheduledTimeMinutes: Int = 540,
 )

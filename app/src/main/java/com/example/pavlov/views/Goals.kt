@@ -11,23 +11,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Delete
-import com.example.pavlov.models.DaysOfWeek
-import com.example.pavlov.PavlovApplication
-import com.example.pavlov.theme.ThemeSwitch
 import com.example.pavlov.models.Goal
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import com.example.pavlov.R
+import com.example.pavlov.models.PavlovDayOfWeek
+import com.example.pavlov.models.PavlovDaysOfWeek
 import com.example.pavlov.viewmodels.SharedState
 
 
@@ -60,12 +51,11 @@ fun GoalsListScreen(
         },
         bottomBar = { PavlovNavbar(activeScreen = sharedState.activeScreen, onNavigate = onNavigate) },
     ) { paddingValues ->
-        if (state.goals.isEmpty()) {
+        if (state.pendingGoals.isEmpty() && state.completedGoals.isEmpty()) {
             EmptyGoalsDisplay(modifier = Modifier.padding(paddingValues))
         } else {
             GoalsList(
-                goals = state.goals,
-                // NOTE(Devin): This is temporary until we decide on goal tracking
+                pendingGoals = state.pendingGoals,
                 completedGoals = state.completedGoals,
                 onEvent = onEvent,
                 modifier = Modifier.padding(paddingValues)
@@ -85,38 +75,14 @@ fun GoalsListScreen(
         onEvent(GoalsEvent.HideAddGoalAlert)
     }
 }
-@Composable
-fun TreatsTracker(totalTreats: Int, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .padding(end = 16.dp)
-            .wrapContentSize(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.dog_treat), // ⭐ Icon representing treats
-            contentDescription = "Treats",
-            tint = MaterialTheme.colorScheme.secondary
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = totalTreats.toString(),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onPrimary
-        )
-    }
-}
-
-
 
 /**
  * Shows all the goals in a scrollable list
  */
 @Composable
 fun GoalsList(
-    goals: List<Goal>,
-    // NOTE(Devin): This is temporary until we decide on goal tracking
-    completedGoals: Map<Int, Boolean>,
+    pendingGoals: List<Goal>,
+    completedGoals: List<Goal>,
     onEvent: (GoalsEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -125,10 +91,17 @@ fun GoalsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(goals) { goal ->
+        items(pendingGoals) { goal ->
             GoalItem(
                 goal = goal,
-                completed = completedGoals[goal.id] ?: false,
+                completed = false,
+                onEvent = onEvent,
+            )
+        }
+        items(completedGoals) { goal ->
+            GoalItem(
+                goal = goal,
+                completed = true,
                 onEvent = onEvent,
             )
         }
@@ -161,16 +134,18 @@ fun GoalItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
-            Checkbox(
-                checked = completed,
-                onCheckedChange = { onEvent(GoalsEvent.MarkGoalComplete(goal.id))},
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.primary,
-                    uncheckedColor = MaterialTheme.colorScheme.secondary,
-                    checkmarkColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                modifier = Modifier.padding(end = 16.dp)
-            )
+            if (!completed) {
+                Checkbox(
+                    checked = false,
+                    onCheckedChange = { onEvent(GoalsEvent.MarkGoalComplete(goal.id)) },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = MaterialTheme.colorScheme.primary,
+                        uncheckedColor = MaterialTheme.colorScheme.secondary,
+                        checkmarkColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.padding(end = 16.dp)
+                )
+            }
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -233,13 +208,9 @@ fun GoalItem(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
-                        DayDot("M", DaysOfWeek.MONDAY, goal.activeDays)
-                        DayDot("T", DaysOfWeek.TUESDAY, goal.activeDays)
-                        DayDot("W", DaysOfWeek.WEDNESDAY, goal.activeDays)
-                        DayDot("TH", DaysOfWeek.THURSDAY, goal.activeDays)
-                        DayDot("F", DaysOfWeek.FRIDAY, goal.activeDays)
-                        DayDot("Sa", DaysOfWeek.SATURDAY, goal.activeDays)
-                        DayDot("Su", DaysOfWeek.SUNDAY, goal.activeDays)
+                        PavlovDayOfWeek.entries.forEach {
+                            DayDot(it, goal.activeDays)
+                        }
                     }
 
             }
@@ -260,12 +231,10 @@ fun GoalItem(
 
 @Composable
 fun DayDot(
-    dayLabel: String,
-    dayFlag: Int,
-    activeDays: Int
+    day: PavlovDayOfWeek,
+    activeDays: PavlovDaysOfWeek,
 ) {
-    val isActive = DaysOfWeek.isDayActive(activeDays, dayFlag)
-
+    val isActive = activeDays.isDayActive(day)
     Surface(
         modifier = Modifier.size(18.dp),
         shape = androidx.compose.foundation.shape.CircleShape,
@@ -275,7 +244,7 @@ fun DayDot(
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
-                text = dayLabel,
+                text = day.abbrev,
                 style = MaterialTheme.typography.labelSmall,
                 // Use onPrimary for active days, muted onSurface for inactive days
                 color = if (isActive) MaterialTheme.colorScheme.onPrimary

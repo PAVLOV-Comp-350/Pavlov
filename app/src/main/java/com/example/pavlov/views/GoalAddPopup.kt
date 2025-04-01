@@ -38,7 +38,7 @@ fun GoalAddPopup(
                         .padding(vertical = 8.dp)
                 ) {
                     OutlinedTextField(
-                        value = state.newGoalTitle,
+                        value = state.newGoal.title,
                         onValueChange = { onEvent(GoalsEvent.SetGoalTitle(it)) },
                         label = { Text("Goal Name") },
                         modifier = Modifier
@@ -47,7 +47,7 @@ fun GoalAddPopup(
                     )
 
                     OutlinedTextField(
-                        value = state.newGoalDescription,
+                        value = state.newGoal.description,
                         onValueChange = { onEvent(GoalsEvent.SetGoalDescription(it)) },
                         label = { Text("Description") },
                         modifier = Modifier
@@ -63,8 +63,8 @@ fun GoalAddPopup(
                     )
 
                     DaySelectionRow(
-                        activeDays = state.newGoalActiveDays,
-                        onDayToggle = { day -> onEvent(GoalsEvent.ToggleGoalDay(day)) },
+                        activeDays = state.newGoal.activeDays,
+                        onDayToggle = { onEvent(GoalsEvent.ToggleGoalDay(it)) },
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
@@ -76,7 +76,7 @@ fun GoalAddPopup(
                     )
 
                     TimeSelector(
-                        scheduledTimeMinutes = state.newGoalScheduledTimeMinutes,
+                        scheduledTimeMinutes = state.newGoal.scheduledTimeMinutes,
                         onTimeClick = { onEvent(GoalsEvent.ShowTimePicker) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -87,7 +87,7 @@ fun GoalAddPopup(
                     if (state.isEditMode) {
                         Button(
                             onClick = {
-                                onEvent(GoalsEvent.DeleteGoal(state.newGoalId))
+                                onEvent(GoalsEvent.DeleteGoal(state.newGoal.id))
                                 onDismiss()
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -122,10 +122,9 @@ fun GoalAddPopup(
             }
         )
 
-//Time picker dialog
         if (state.showTimePickerDialog) {
             TimePickerDialog(
-                initialMinutes = state.newGoalScheduledTimeMinutes,
+                initialMinutes = state.newGoal.scheduledTimeMinutes,
                 onTimeSelected = { minutes ->
                     onEvent(GoalsEvent.SetScheduledTime(minutes))
                 },

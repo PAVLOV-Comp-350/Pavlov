@@ -7,4 +7,5 @@ sealed interface CasinoEvent {
     data object CloseGameDialog : CasinoEvent
     data class PlayGame(val game: CasinoGame) : CasinoEvent
     data class SpendTreats(val amount: Int) : CasinoEvent
+    data class ScratcherEvent(val event: com.example.pavlov.viewmodels.ScratcherEvent) : CasinoEvent
 }

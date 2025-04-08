@@ -20,31 +20,31 @@ fun getCasinoGames() = remember {
         CasinoGame(
             name = "Scratcher",
             iconResId = R.drawable.scratcher_icon,
-            gradient = CasinoTheme.GoldGradient,
+            gradient = CasinoTheme.BronzeGradient,
             costInTreats = 5,
         ),
         CasinoGame(
             name = "Roulette",
             iconResId = R.drawable.roulette_icon,
-            gradient = CasinoTheme.GoldGradient,
+            gradient = CasinoTheme.BronzeGradient,
             costInTreats = 8,
         ),
         CasinoGame(
             name = "Slots",
             iconResId = R.drawable.slots_icon,
-            gradient = CasinoTheme.GoldGradient,
+            gradient = CasinoTheme.BronzeGradient,
             costInTreats = 10,
         ),
         CasinoGame(
             name = "Pachinko",
             iconResId = R.drawable.pachinko_icon,
-            gradient = CasinoTheme.GoldGradient,
+            gradient = CasinoTheme.BronzeGradient,
             costInTreats = 15,
         ),
         CasinoGame(
             name = "Cards",
             iconResId = R.drawable.card_icon,
-            gradient = CasinoTheme.GoldGradient,
+            gradient = CasinoTheme.BronzeGradient,
             costInTreats = 12,
         )
     )

@@ -7,6 +7,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.example.pavlov.viewmodels.AnyEvent
 import com.example.pavlov.viewmodels.CasinoEvent
 import com.example.pavlov.viewmodels.CasinoState
 import com.example.pavlov.viewmodels.SettingsEvent
@@ -21,11 +22,11 @@ import com.example.pavlov.viewmodels.SharedState
 fun CasinoScreen(
     state: CasinoState,
     sharedState: SharedState,
-    onEvent: (CasinoEvent) -> Unit,
+    onEvent: (AnyEvent) -> Unit,
     onNavigate: (Screen) -> Unit,
 ){
     Scaffold(
-        topBar = { PavlovTopBar(sharedState) },
+        topBar = { PavlovTopBar(sharedState, onEvent = {onEvent(it)}) },
         bottomBar = { PavlovNavbar(activeScreen = sharedState.activeScreen, onNavigate = onNavigate) },
     ){ paddingValues ->
         Box(Modifier.padding(paddingValues)){

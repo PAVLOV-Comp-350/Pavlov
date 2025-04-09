@@ -3,6 +3,7 @@ package com.example.pavlov.views
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -12,14 +13,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import com.example.pavlov.models.Goal
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
-import androidx.compose.ui.res.painterResource
-import com.example.pavlov.R
 import com.example.pavlov.models.PavlovDayOfWeek
 import com.example.pavlov.models.PavlovDaysOfWeek
+import com.example.pavlov.utils.Vec2
+import com.example.pavlov.utils.plus
+import com.example.pavlov.viewmodels.AnyEvent
+import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedState
+
 
 
 /**
@@ -33,11 +45,12 @@ import com.example.pavlov.viewmodels.SharedState
 fun GoalsListScreen(
     state: GoalsState,
     sharedState: SharedState,
-    onEvent: (GoalsEvent) -> Unit,
+    onEvent: (AnyEvent) -> Unit,
     onNavigate: (Screen) -> Unit,
 ) {
+
     Scaffold(
-        topBar = { PavlovTopBar(sharedState) },
+        topBar = { PavlovTopBar(sharedState, onEvent = {onEvent(it)}) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEvent(GoalsEvent.ShowAddGoalAlert) },
@@ -63,7 +76,6 @@ fun GoalsListScreen(
         }
     }
 
-    //If statement is used to trigger GoalAddPopup() and allowing the Popup to close when the showPopup value is set to "False"
     if (state.showPopup){
         GoalAddPopup(
             onDismiss = { onEvent(GoalsEvent.HideAddGoalAlert) },
@@ -83,7 +95,7 @@ fun GoalsListScreen(
 fun GoalsList(
     pendingGoals: List<Goal>,
     completedGoals: List<Goal>,
-    onEvent: (GoalsEvent) -> Unit,
+    onEvent: (AnyEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -115,7 +127,7 @@ fun GoalsList(
 fun GoalItem(
     goal: Goal,
     completed: Boolean,
-    onEvent: (GoalsEvent) -> Unit,
+    onEvent: (AnyEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -135,15 +147,36 @@ fun GoalItem(
             horizontalArrangement = Arrangement.Start
         ) {
             if (!completed) {
+                var spawnCollectablePos by remember { mutableStateOf(Vec2(0f)) }
                 Checkbox(
                     checked = false,
-                    onCheckedChange = { onEvent(GoalsEvent.MarkGoalComplete(goal.id)) },
+                    onCheckedChange = {
+                        onEvent(
+                            GoalsEvent.MarkGoalComplete(goal.id)
+                        )
+                        onEvent(
+                            SharedEvent.GenerateCollectableRewards(
+                                spawnCollectablePos
+                            )
+                        )
+                    },
                     colors = CheckboxDefaults.colors(
                         checkedColor = MaterialTheme.colorScheme.primary,
                         uncheckedColor = MaterialTheme.colorScheme.secondary,
                         checkmarkColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    modifier = Modifier.padding(end = 16.dp)
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .onGloballyPositioned {
+                            if (it.isAttached) {
+                                val bounds = it.boundsInRoot()
+                                val off = it.positionInRoot()
+                                spawnCollectablePos = Vec2(
+                                    x = (off.x + bounds.width / 2),
+                                    y = (off.y + bounds.height / 2),
+                                )
+                            }
+                        },
                 )
             }
 
@@ -237,7 +270,7 @@ fun DayDot(
     val isActive = activeDays.isDayActive(day)
     Surface(
         modifier = Modifier.size(18.dp),
-        shape = androidx.compose.foundation.shape.CircleShape,
+        shape = CircleShape,
         // Use primary color for active days, muted color for inactive days
         color = if (isActive) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),

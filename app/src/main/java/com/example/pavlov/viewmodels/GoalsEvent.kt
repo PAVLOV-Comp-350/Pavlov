@@ -1,13 +1,12 @@
 package com.example.pavlov.viewmodels
 
 import com.example.pavlov.models.PavlovDayOfWeek
+import com.example.pavlov.utils.Vec2
 
 /* *
 *  This interface defines all of the user interaction events that happen in the Goals Screen
 *  */
-sealed interface GoalsEvent {
-    // TODO: This should actually be broken into a few UI interactions.
-    //  Something like ShowAddGoalDialog, HideAddGoalDialog, and SaveNewGoal
+sealed interface GoalsEvent : AnyEvent {
     data class MarkGoalComplete(val goalId: Int) : GoalsEvent
     data object ShowAddGoalAlert : GoalsEvent
     data object HideAddGoalAlert : GoalsEvent

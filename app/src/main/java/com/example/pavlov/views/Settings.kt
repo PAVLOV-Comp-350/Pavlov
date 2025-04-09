@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.pavlov.PavlovApplication
 import com.example.pavlov.theme.ThemeSwitch
+import com.example.pavlov.viewmodels.AnyEvent
 import com.example.pavlov.viewmodels.SettingsEvent
 import com.example.pavlov.viewmodels.SettingsState
 import com.example.pavlov.viewmodels.SharedState
@@ -36,11 +37,11 @@ import com.example.pavlov.viewmodels.SharedState
 fun SettingsScreen(
     state: SettingsState,
     sharedState: SharedState,
-    onEvent: (SettingsEvent) -> Unit,
+    onEvent: (AnyEvent) -> Unit,
     onNavigate: (Screen) -> Unit,
 ) {
     Scaffold(
-        topBar = { PavlovTopBar(sharedState) },
+        topBar = { PavlovTopBar(sharedState, onEvent = {onEvent(it)}) },
         bottomBar = { PavlovNavbar(activeScreen = sharedState.activeScreen, onNavigate = onNavigate) },
     ) { padding ->
         val isDarkMode by PavlovApplication.isDarkTheme.collectAsState()

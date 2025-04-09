@@ -1,5 +1,6 @@
 package com.example.pavlov.viewmodels
 
+import androidx.compose.runtime.currentCompositionErrors
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pavlov.PavlovApplication
@@ -8,6 +9,10 @@ import com.example.pavlov.models.ActivityDao
 import com.example.pavlov.models.Goal
 import com.example.pavlov.models.GoalDao
 import com.example.pavlov.models.PavlovDayOfWeek
+import com.example.pavlov.utils.Vec2
+import com.example.pavlov.utils.getRandomUnitVec2
+import com.example.pavlov.utils.plus
+import com.example.pavlov.utils.times
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -15,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import kotlin.random.Random
 
 class GoalsViewModel(
     private val goalDao: GoalDao,
@@ -58,7 +64,6 @@ class GoalsViewModel(
 
     fun onEvent(event: GoalsEvent) {
         when(event) {
-
             GoalsEvent.ShowAddGoalAlert -> {
                 _state.value = _state.value.copy(
                     showPopup = true,
@@ -138,7 +143,6 @@ class GoalsViewModel(
             }
 
             is GoalsEvent.MarkGoalComplete -> {
-                PavlovApplication.addTreats(1)
 
                 viewModelScope.launch {
                     activityDao.insertActivity(Activity(
@@ -180,4 +184,7 @@ class GoalsViewModel(
         return state.value.pendingGoals.find(predicate) ?:
             state.value.completedGoals.find(predicate)
     }
+
+
+
 }

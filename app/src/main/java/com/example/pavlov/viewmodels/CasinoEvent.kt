@@ -1,4 +1,4 @@
 package com.example.pavlov.viewmodels
 
-sealed interface CasinoEvent {
+sealed interface CasinoEvent : AnyEvent {
 }

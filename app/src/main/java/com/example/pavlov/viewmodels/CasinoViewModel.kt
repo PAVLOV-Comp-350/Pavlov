@@ -141,7 +141,7 @@ class CasinoViewModel: ViewModel() {
     private fun generateScratcherValues(): List<Int> {
         // possible prize values and their probabilities
         val possibleValues = listOf(0, 1, 2, 5, 10, 20, 100)
-        val weights = listOf(70, 15, 5, 4, 3, 2, 1) // out of 100
+        val weights = listOf(75, 10, 5, 2, 1, 1, 1) // out of 100
 
         val totalWeight = weights.sum()
         val normalizedWeights = weights.map { it.toDouble() / totalWeight }

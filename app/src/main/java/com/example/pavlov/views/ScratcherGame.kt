@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -114,13 +115,13 @@ fun ScratcherGrid(
                 brush = Brush.linearGradient(CasinoTheme.GoldGradient),
                 shape = RoundedCornerShape(12.dp)
             )
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(4.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
         for (row in 0 until 3) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(1.dp)
             ) {
                 for (col in 0 until 3) {
                     val index = row * 3 + col
@@ -159,7 +160,7 @@ fun ScratcherCell(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(8.dp)),
+            .clip(RectangleShape),
         contentAlignment = Alignment.Center
     ) {
         // Prize background with reward value

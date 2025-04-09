@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 4,
-    "identityHash": "9d981788323668e9890e4fe3c7b1a1f1",
+    "identityHash": "98446bc0eff9a42b7b8c91c915ef2164",
     "entities": [
       {
         "tableName": "goals",
@@ -128,50 +128,12 @@
         },
         "indices": [],
         "foreignKeys": []
-      },
-      {
-        "tableName": "scratchers",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `is_scratched` INTEGER NOT NULL, `prize_amount` INTEGER NOT NULL, `creation_timestamp` INTEGER NOT NULL)",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "isScratched",
-            "columnName": "is_scratched",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "prizeAmount",
-            "columnName": "prize_amount",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "creationTimestamp",
-            "columnName": "creation_timestamp",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": true,
-          "columnNames": [
-            "id"
-          ]
-        },
-        "indices": [],
-        "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9d981788323668e9890e4fe3c7b1a1f1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '98446bc0eff9a42b7b8c91c915ef2164')"
     ]
   }
 }

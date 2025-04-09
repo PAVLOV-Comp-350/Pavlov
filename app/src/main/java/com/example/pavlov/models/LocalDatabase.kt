@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 
 @Database(
     version = 4,
-    entities = [Goal::class, Activity::class, Scratcher::class],
+    entities = [Goal::class, Activity::class],
     exportSchema = true,
     autoMigrations = [
         AutoMigration (from = 1, to = 2),
@@ -20,5 +20,4 @@ import androidx.room.TypeConverters
 abstract class LocalDatabase : RoomDatabase() {
     abstract val goalDao: GoalDao
     abstract val activityDao: ActivityDao
-    abstract fun scratcherDao(): ScratcherDao
 }

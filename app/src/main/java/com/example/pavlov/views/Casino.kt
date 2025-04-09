@@ -11,23 +11,23 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.pavlov.viewmodels.CasinoEvent
 import com.example.pavlov.viewmodels.CasinoState
+import com.example.pavlov.viewmodels.AnyEvent
 import com.example.pavlov.viewmodels.SharedState
-
 
 /**
  * Casino Screen
  */
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CasinoScreen(
     state: CasinoState,
     sharedState: SharedState,
-    onEvent: (CasinoEvent) -> Unit,
+    onEvent: (AnyEvent) -> Unit,
     onNavigate: (Screen) -> Unit,
-) {
-    // Track selected game for dialog
-
+){
     Scaffold(
-        topBar = { PavlovTopBar(sharedState) },
+        topBar = { PavlovTopBar(sharedState, onEvent = {onEvent(it)}) },
         bottomBar = {
             PavlovNavbar(
                 activeScreen = sharedState.activeScreen,

@@ -1,5 +1,6 @@
 package com.example.pavlov.views
 
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -11,15 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.pavlov.models.DaysOfWeek
+import com.example.pavlov.models.PavlovDayOfWeek
+import com.example.pavlov.models.PavlovDaysOfWeek
 
 /**
  * A component that displays selectable day buttons for the days of the week
  */
 @Composable
 fun DaySelectionRow(
-    activeDays: Int,
-    onDayToggle: (Int) -> Unit,
+    activeDays: PavlovDaysOfWeek,
+    onDayToggle: (PavlovDayOfWeek) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -28,35 +30,29 @@ fun DaySelectionRow(
             .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        DayButton("M", DaysOfWeek.MONDAY, activeDays, onDayToggle)
-        DayButton("T", DaysOfWeek.TUESDAY, activeDays, onDayToggle)
-        DayButton("W", DaysOfWeek.WEDNESDAY, activeDays, onDayToggle)
-        DayButton("TH", DaysOfWeek.THURSDAY, activeDays, onDayToggle)
-        DayButton("F", DaysOfWeek.FRIDAY, activeDays, onDayToggle)
-        DayButton("S", DaysOfWeek.SATURDAY, activeDays, onDayToggle)
-        DayButton("SU", DaysOfWeek.SUNDAY, activeDays, onDayToggle)
+        PavlovDayOfWeek.entries.forEach{
+            DayButton(it, activeDays, onDayToggle)
+        }
     }
 }
 
 @Composable
 fun DayButton(
-    dayLabel: String,
-    dayFlag: Int,
-    activeDays: Int,
-    onDayToggle: (Int) -> Unit
+    day: PavlovDayOfWeek,
+    activeDays: PavlovDaysOfWeek,
+    onDayToggle: (PavlovDayOfWeek) -> Unit
 ) {
-    val isActive = DaysOfWeek.isDayActive(activeDays, dayFlag)
-
+    val isActive = activeDays.isDayActive(day)
     Surface(
         modifier = Modifier
             .size(36.dp)
             .clip(CircleShape),
         color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        onClick = { onDayToggle(dayFlag) }
+        onClick = { onDayToggle(day) }
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
-                text = dayLabel,
+                text = day.abbrev,
                 color = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )

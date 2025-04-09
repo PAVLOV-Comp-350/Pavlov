@@ -3,6 +3,7 @@ package com.example.pavlov.views
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -11,24 +12,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Delete
-import com.example.pavlov.models.DaysOfWeek
-import com.example.pavlov.PavlovApplication
-import com.example.pavlov.theme.ThemeSwitch
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import com.example.pavlov.models.Goal
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import com.example.pavlov.R
+import com.example.pavlov.models.PavlovDayOfWeek
+import com.example.pavlov.models.PavlovDaysOfWeek
+import com.example.pavlov.utils.Vec2
+import com.example.pavlov.utils.plus
+import com.example.pavlov.viewmodels.AnyEvent
+import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedState
+
 
 
 /**
@@ -42,11 +45,12 @@ import com.example.pavlov.viewmodels.SharedState
 fun GoalsListScreen(
     state: GoalsState,
     sharedState: SharedState,
-    onEvent: (GoalsEvent) -> Unit,
+    onEvent: (AnyEvent) -> Unit,
     onNavigate: (Screen) -> Unit,
 ) {
+
     Scaffold(
-        topBar = { PavlovTopBar(sharedState) },
+        topBar = { PavlovTopBar(sharedState, onEvent = {onEvent(it)}) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEvent(GoalsEvent.ShowAddGoalAlert) },
@@ -60,12 +64,11 @@ fun GoalsListScreen(
         },
         bottomBar = { PavlovNavbar(activeScreen = sharedState.activeScreen, onNavigate = onNavigate) },
     ) { paddingValues ->
-        if (state.goals.isEmpty()) {
+        if (state.pendingGoals.isEmpty() && state.completedGoals.isEmpty()) {
             EmptyGoalsDisplay(modifier = Modifier.padding(paddingValues))
         } else {
             GoalsList(
-                goals = state.goals,
-                // NOTE(Devin): This is temporary until we decide on goal tracking
+                pendingGoals = state.pendingGoals,
                 completedGoals = state.completedGoals,
                 onEvent = onEvent,
                 modifier = Modifier.padding(paddingValues)
@@ -73,7 +76,6 @@ fun GoalsListScreen(
         }
     }
 
-    //If statement is used to trigger GoalAddPopup() and allowing the Popup to close when the showPopup value is set to "False"
     if (state.showPopup){
         GoalAddPopup(
             onDismiss = { onEvent(GoalsEvent.HideAddGoalAlert) },
@@ -85,39 +87,15 @@ fun GoalsListScreen(
         onEvent(GoalsEvent.HideAddGoalAlert)
     }
 }
-@Composable
-fun TreatsTracker(totalTreats: Int, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .padding(end = 16.dp)
-            .wrapContentSize(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.dog_treat), // ⭐ Icon representing treats
-            contentDescription = "Treats",
-            tint = MaterialTheme.colorScheme.secondary
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = totalTreats.toString(),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onPrimary
-        )
-    }
-}
-
-
 
 /**
  * Shows all the goals in a scrollable list
  */
 @Composable
 fun GoalsList(
-    goals: List<Goal>,
-    // NOTE(Devin): This is temporary until we decide on goal tracking
-    completedGoals: Map<Int, Boolean>,
-    onEvent: (GoalsEvent) -> Unit,
+    pendingGoals: List<Goal>,
+    completedGoals: List<Goal>,
+    onEvent: (AnyEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -125,10 +103,17 @@ fun GoalsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(goals) { goal ->
+        items(pendingGoals) { goal ->
             GoalItem(
                 goal = goal,
-                completed = completedGoals[goal.id] ?: false,
+                completed = false,
+                onEvent = onEvent,
+            )
+        }
+        items(completedGoals) { goal ->
+            GoalItem(
+                goal = goal,
+                completed = true,
                 onEvent = onEvent,
             )
         }
@@ -142,7 +127,7 @@ fun GoalsList(
 fun GoalItem(
     goal: Goal,
     completed: Boolean,
-    onEvent: (GoalsEvent) -> Unit,
+    onEvent: (AnyEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -161,16 +146,39 @@ fun GoalItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
-            Checkbox(
-                checked = completed,
-                onCheckedChange = { onEvent(GoalsEvent.MarkGoalComplete(goal.id))},
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.primary,
-                    uncheckedColor = MaterialTheme.colorScheme.secondary,
-                    checkmarkColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                modifier = Modifier.padding(end = 16.dp)
-            )
+            if (!completed) {
+                var spawnCollectablePos by remember { mutableStateOf(Vec2(0f)) }
+                Checkbox(
+                    checked = false,
+                    onCheckedChange = {
+                        onEvent(
+                            GoalsEvent.MarkGoalComplete(goal.id)
+                        )
+                        onEvent(
+                            SharedEvent.GenerateCollectableRewards(
+                                spawnCollectablePos
+                            )
+                        )
+                    },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = MaterialTheme.colorScheme.primary,
+                        uncheckedColor = MaterialTheme.colorScheme.secondary,
+                        checkmarkColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .onGloballyPositioned {
+                            if (it.isAttached) {
+                                val bounds = it.boundsInRoot()
+                                val off = it.positionInRoot()
+                                spawnCollectablePos = Vec2(
+                                    x = (off.x + bounds.width / 2),
+                                    y = (off.y + bounds.height / 2),
+                                )
+                            }
+                        },
+                )
+            }
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -233,13 +241,9 @@ fun GoalItem(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
-                        DayDot("M", DaysOfWeek.MONDAY, goal.activeDays)
-                        DayDot("T", DaysOfWeek.TUESDAY, goal.activeDays)
-                        DayDot("W", DaysOfWeek.WEDNESDAY, goal.activeDays)
-                        DayDot("TH", DaysOfWeek.THURSDAY, goal.activeDays)
-                        DayDot("F", DaysOfWeek.FRIDAY, goal.activeDays)
-                        DayDot("Sa", DaysOfWeek.SATURDAY, goal.activeDays)
-                        DayDot("Su", DaysOfWeek.SUNDAY, goal.activeDays)
+                        PavlovDayOfWeek.entries.forEach {
+                            DayDot(it, goal.activeDays)
+                        }
                     }
 
             }
@@ -260,22 +264,20 @@ fun GoalItem(
 
 @Composable
 fun DayDot(
-    dayLabel: String,
-    dayFlag: Int,
-    activeDays: Int
+    day: PavlovDayOfWeek,
+    activeDays: PavlovDaysOfWeek,
 ) {
-    val isActive = DaysOfWeek.isDayActive(activeDays, dayFlag)
-
+    val isActive = activeDays.isDayActive(day)
     Surface(
         modifier = Modifier.size(18.dp),
-        shape = androidx.compose.foundation.shape.CircleShape,
+        shape = CircleShape,
         // Use primary color for active days, muted color for inactive days
         color = if (isActive) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
-                text = dayLabel,
+                text = day.abbrev,
                 style = MaterialTheme.typography.labelSmall,
                 // Use onPrimary for active days, muted onSurface for inactive days
                 color = if (isActive) MaterialTheme.colorScheme.onPrimary

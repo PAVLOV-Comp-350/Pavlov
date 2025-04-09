@@ -17,17 +17,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pavlov.R
 import com.example.pavlov.theme.ThemeSwitch
+import com.example.pavlov.utils.Vec2
+import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PavlovTopBar(
     sharedState: SharedState,
+    onEvent: (SharedEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -66,7 +72,20 @@ fun PavlovTopBar(
                     painter = painterResource(id = R.drawable.dog_treat),
                     contentDescription = "Total Treats",
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(24.dp)
+                        .onGloballyPositioned {
+                            if (it.isAttached) {
+                                val bounds = it.boundsInRoot()
+                                val off = it.positionInRoot()
+                                onEvent(SharedEvent.SetCollectablesTarget(
+                                    Vec2(
+                                        x = (off.x + bounds.width / 2),
+                                        y = (off.y + bounds.height / 2),
+                                    )
+                                ))
+                            }
+                        },
                 )
             }
         }

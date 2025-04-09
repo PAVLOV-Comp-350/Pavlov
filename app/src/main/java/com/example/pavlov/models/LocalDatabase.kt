@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
+
 @Database(
     version = 3,
     entities = [Goal::class, Activity::class],

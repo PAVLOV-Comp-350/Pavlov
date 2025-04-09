@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("androidx.room")
+
     kotlin("plugin.serialization") version "2.0.21"
 }
 

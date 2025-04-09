@@ -1,10 +1,10 @@
 package com.example.pavlov.viewmodels
 
 import com.example.pavlov.models.CasinoGame
+import com.example.pavlov.models.ScratcherGameState
 
 data class CasinoState(
     val selectedGame: CasinoGame? = null,
-    val showGameDialog: Boolean = false,
-    val gameResults: Map<String, Int> = emptyMap(),
-    val isPlaying: Boolean = false
+    val isLoading: Boolean = false,
+    val scratcherGameState: ScratcherGameState? = null
 )

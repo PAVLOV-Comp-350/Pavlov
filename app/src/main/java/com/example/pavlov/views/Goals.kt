@@ -230,7 +230,6 @@ fun GoalItem(
                         )
                     }
                 }
-                    //Display active days as small indicators
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -248,7 +247,6 @@ fun GoalItem(
 
             }
 
-            // Action buttons
             Row {
                 IconButton(onClick = { onEvent(GoalsEvent.ShowEditGoalAlert(goal.id)) }) {
                     Icon(

@@ -53,7 +53,6 @@ fun ScratcherGame(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Game title
             Text(
                 text = "Scratcher",
                 style = MaterialTheme.typography.headlineMedium,
@@ -61,7 +60,6 @@ fun ScratcherGame(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Game instructions
             Text(
                 text = "Scratch to reveal prizes!",
                 style = MaterialTheme.typography.bodyMedium,
@@ -149,7 +147,6 @@ fun ScratcherCell(
     val scratchThreshold = 0.6f
     var isRevealed by remember { mutableStateOf(cell.isRevealed) }
 
-    // Mark as revealed once enough is scratched
     LaunchedEffect(scratchProgress) {
         if (scratchProgress >= scratchThreshold && !isRevealed) {
             isRevealed = true

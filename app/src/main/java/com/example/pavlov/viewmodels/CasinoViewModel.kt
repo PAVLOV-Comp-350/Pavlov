@@ -2,7 +2,9 @@ package com.example.pavlov.viewmodels
 
 import androidx.lifecycle.ViewModel
 import android.util.Log
+import androidx.room.util.getColumnIndex
 import com.example.pavlov.PavlovApplication
+import com.example.pavlov.models.RouletteGameState
 import com.example.pavlov.models.ScratcherCell
 import com.example.pavlov.models.ScratcherGameState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +30,8 @@ class CasinoViewModel: ViewModel() {
                 _state.update {
                     it.copy(
                         selectedGame = null,
-                        scratcherGameState = null
+                        scratcherGameState = null,
+                        rouletteGameState = null
                     )
                 }
             }
@@ -36,6 +39,7 @@ class CasinoViewModel: ViewModel() {
             is CasinoEvent.PlayGame -> {
                 when (event.game.name) {
                     "Scratcher" -> initScratcherGame()
+                    "Roulette" -> initRouletteGame()
                     else -> {}
                 }
             }
@@ -47,7 +51,120 @@ class CasinoViewModel: ViewModel() {
             is CasinoEvent.ScratcherEvent -> {
                 handleScratcherEvent(event.event)
             }
+
+            is CasinoEvent.RouletteEvent -> {
+                handleRouletteEvent(event.event)
+            }
         }
+    }
+
+    private fun handleRouletteEvent(event: RouletteEvent) {
+        when(event) {
+            is RouletteEvent.StartNewGame -> {
+                initRouletteGame()
+            }
+
+            is RouletteEvent.SelectPick -> {
+                val roulettePicks = listOf("1 - 12", "13 - 24", "25 - 36", "00") + (0..36).map { it.toString() }
+
+                // Safely access rouletteGameState
+                _state.value.rouletteGameState?.let { gameState ->
+                    val myPick = roulettePicks.getOrNull(gameState.pickIndex) ?: "Invalid Pick"
+
+                    _state.update {
+                        it.copy(
+                            rouletteGameState = gameState.copy(
+                                pick = myPick
+                            )
+                        )
+                    }
+                }
+            }
+
+            is RouletteEvent.Spin -> {
+                _state.value.rouletteGameState?.let { gameState ->
+                    _state.update {
+                        it.copy(
+                            rouletteGameState = gameState.copy(
+                                isSpinning = true
+                            )
+                        )
+                    }
+                }
+            }
+
+            is RouletteEvent.StopSpinning -> {
+                _state.value.rouletteGameState?.let { gameState ->
+                    if(gameState.win == gameState.pick) {
+                        if(gameState.pickIndex <= 3){
+                            _state.update {
+                                it.copy(
+                                    rouletteGameState = gameState.copy(
+                                        isSpinning = false,
+                                        totalPrize = 16
+                                    )
+                                )
+                            }
+                        } else {
+                            _state.update {
+                                it.copy(
+                                    rouletteGameState = gameState.copy(
+                                        isSpinning = false,
+                                        totalPrize = 280
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            is RouletteEvent.CollectPrize -> {
+                _state.value.rouletteGameState?.let { gameState ->
+                    if (gameState.totalPrize > 0) {
+                        PavlovApplication.addTreats(gameState.totalPrize)
+                        _state.update {
+                            it.copy(
+                                rouletteGameState = null,
+                                selectedGame = null
+                            )
+                        }
+                    }
+                }
+            }
+
+            is RouletteEvent.CloseGame -> {
+                _state.update {
+                    it.copy(
+                        rouletteGameState = null,
+                        selectedGame = null
+                    )
+                }
+            }
+        }
+    }
+
+    private fun initRouletteGame() {
+        val win = rouletteGetRandomWin()
+
+        _state.update {
+            it.copy(
+                rouletteGameState = RouletteGameState(
+                    isSpinning = false,
+                    pick = "",
+                    board = listOf("1 - 12", "13 - 24", "25 - 36", "00") + (0..36).map {it.toString()},
+                    pickIndex = 0,
+                    win = win,
+                    totalPrize = 0
+                )
+            )
+        }
+    }
+
+    private fun rouletteGetRandomWin(): String{
+        val picks = listOf("00") + (0..36).map {it.toString()}
+        val newWin = picks.random()
+        return newWin
     }
 
     private fun handleScratcherEvent(event: ScratcherEvent) {

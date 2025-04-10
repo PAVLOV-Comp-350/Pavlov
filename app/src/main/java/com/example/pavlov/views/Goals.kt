@@ -68,14 +68,6 @@ fun GoalsListScreen(
             .fillMaxSize()
             .padding(paddingValues)
         ) {
-            // Your XP Bar!
-            XpBar(
-                currentXp = state.xp,
-                xpToNextLevel = 100,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            )
 
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -176,6 +168,9 @@ fun GoalItem(
                             SharedEvent.GenerateCollectableRewards(
                                 spawnCollectablePos
                             )
+                        )
+                        onEvent(
+                            SharedEvent.GainXpFromTask
                         )
                     },
                     colors = CheckboxDefaults.colors(

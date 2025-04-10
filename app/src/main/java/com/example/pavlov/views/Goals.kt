@@ -50,7 +50,7 @@ fun GoalsListScreen(
 ) {
 
     Scaffold(
-        topBar = { PavlovTopBar(sharedState, onEvent = {onEvent(it)}) },
+        topBar = { PavlovTopBar(sharedState, onEvent = { onEvent(it) }) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEvent(GoalsEvent.ShowAddGoalAlert) },
@@ -64,17 +64,27 @@ fun GoalsListScreen(
         },
         bottomBar = { PavlovNavbar(activeScreen = sharedState.activeScreen, onNavigate = onNavigate) },
     ) { paddingValues ->
-        if (state.pendingGoals.isEmpty() && state.completedGoals.isEmpty()) {
-            EmptyGoalsDisplay(modifier = Modifier.padding(paddingValues))
-        } else {
-            GoalsList(
-                pendingGoals = state.pendingGoals,
-                completedGoals = state.completedGoals,
-                onEvent = onEvent,
-                modifier = Modifier.padding(paddingValues)
-            )
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+        ) {
+
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (state.pendingGoals.isEmpty() && state.completedGoals.isEmpty()) {
+                EmptyGoalsDisplay()
+            } else {
+                GoalsList(
+                    pendingGoals = state.pendingGoals,
+                    completedGoals = state.completedGoals,
+                    onEvent = onEvent,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
+
 
     if (state.showPopup){
         GoalAddPopup(
@@ -158,6 +168,9 @@ fun GoalItem(
                             SharedEvent.GenerateCollectableRewards(
                                 spawnCollectablePos
                             )
+                        )
+                        onEvent(
+                            SharedEvent.GainXpFromTask
                         )
                     },
                     colors = CheckboxDefaults.colors(

@@ -46,6 +46,17 @@ class SharedViewModel: ViewModel() {
                     collectableTarget = event.target
                 )
             }
+            is SharedEvent.UpdateXp -> {
+                _state.update { current ->
+                    current.copy(
+                        currentXp = event.newXp,
+                        maxXp = event.newMaxXp
+                    )
+                }
+            }
+            is SharedEvent.GainXpFromTask -> {
+                gainXpFromTask()
+            }
         }
     }
 
@@ -92,6 +103,23 @@ class SharedViewModel: ViewModel() {
             current.copy(
                 rewardCollectables = current.rewardCollectables.plus(newCollectables)
             )
+        }
+    }
+
+    fun gainXpFromTask() {
+        _state.update { current ->
+            val newTotalXp = current.currentXp + 20 // or however much XP per goal
+
+            if (newTotalXp >= current.maxXp) {
+                current.copy(
+                    currentXp = newTotalXp - current.maxXp,
+                    maxXp = current.maxXp + 25 // Optional level-up scaling
+                )
+            } else {
+                current.copy(
+                    currentXp = newTotalXp
+                )
+            }
         }
     }
 }

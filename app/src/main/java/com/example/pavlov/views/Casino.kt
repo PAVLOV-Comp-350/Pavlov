@@ -61,51 +61,87 @@ fun CasinoScreen(
 
         // Show game dialog when a game is selected
         state.selectedGame?.let { game ->
-            if (game.name == "Scratcher" && state.scratcherGameState != null) {
-                Dialog(
-                    onDismissRequest = { onEvent(CasinoEvent.CloseGameDialog) },
-                    properties = DialogProperties(
-                        dismissOnBackPress = true,
-                        dismissOnClickOutside = false,
-                        usePlatformDefaultWidth = false
-                    )
-                ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth(0.95f)
-                            .fillMaxHeight(0.9f)
-                            .padding(8.dp),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 8.dp
-                        )
-                    ) {
-                        ScratcherGame(
-                            gameState = state.scratcherGameState,
-                            onEvent = { scratcherEvent ->
-                                onEvent(CasinoEvent.ScratcherEvent(scratcherEvent))
-                            }
-                        )
-                    }
-                }
-            } else {
-                GameDialog(
-                    game = game,
-                    onDismiss = { onEvent(CasinoEvent.CloseGameDialog) },
-                    onPlay = {
-                        // Handles playing the game
-                        game.costInTreats?.let { cost ->
-                            if (sharedState.treats >= cost) {
-                                onEvent(CasinoEvent.SpendTreats(cost))
-                                onEvent(CasinoEvent.PlayGame(game))
+            when {
+                game.name == "Scratcher" && state.scratcherGameState != null -> {
+                        Dialog(
+                            onDismissRequest = { onEvent(CasinoEvent.CloseGameDialog) },
+                            properties = DialogProperties(
+                                dismissOnBackPress = true,
+                                dismissOnClickOutside = false,
+                                usePlatformDefaultWidth = false
+                            )
+                        ) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.95f)
+                                    .fillMaxHeight(0.9f)
+                                    .padding(8.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                elevation = CardDefaults.cardElevation(
+                                    defaultElevation = 8.dp
+                                )
+                            ) {
+                                ScratcherGame(
+                                    gameState = state.scratcherGameState,
+                                    onEvent = { scratcherEvent ->
+                                        onEvent(CasinoEvent.ScratcherEvent(scratcherEvent))
+                                    }
+                                )
                             }
                         }
-                    },
-                    availableTreats = sharedState.treats
-                )
+                }
+
+                game.name == "Roulette" && state.rouletteGameState !=null -> {
+                        Dialog(
+                            onDismissRequest = { onEvent(CasinoEvent.CloseGameDialog) },
+                            properties = DialogProperties(
+                                dismissOnBackPress = true,
+                                dismissOnClickOutside = false,
+                                usePlatformDefaultWidth = false
+                            )
+                        ) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth( 0.95f)
+                                    .fillMaxHeight(0.9f)
+                                    .padding(8.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                elevation = CardDefaults.cardElevation(
+                                    defaultElevation = 8.dp
+                                )
+                            ) {
+                                RouletteGame(
+                                    gameState = state.rouletteGameState,
+                                    onEvent = { rouletteEvent ->
+                                        onEvent(CasinoEvent.RouletteEvent(rouletteEvent))
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                else -> {
+                    GameDialog(
+                        game = game,
+                        onDismiss = { onEvent(CasinoEvent.CloseGameDialog) },
+                        onPlay = {
+                            // Handles playing the game
+                            game.costInTreats?.let { cost ->
+                                if (sharedState.treats >= cost) {
+                                    onEvent(CasinoEvent.SpendTreats(cost))
+                                    onEvent(CasinoEvent.PlayGame(game))
+                                }
+                            }
+                        },
+                        availableTreats = sharedState.treats
+                    )
+                }
             }
         }
     }

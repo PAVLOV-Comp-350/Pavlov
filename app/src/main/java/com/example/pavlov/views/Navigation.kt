@@ -1,5 +1,6 @@
 package com.example.pavlov.views
 
+import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
@@ -29,8 +30,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.pavlov.PavlovApplication
+import com.example.pavlov.viewmodels.AnyEvent
+import com.example.pavlov.viewmodels.CasinoEvent
 import com.example.pavlov.viewmodels.CasinoViewModel
+import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsViewModel
+import com.example.pavlov.viewmodels.SettingsEvent
 import com.example.pavlov.viewmodels.SettingsViewModel
 import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedViewModel
@@ -51,6 +56,7 @@ sealed interface Screen {
 
 @Composable
 fun PavlovNavHost(
+    sharedViewModel: SharedViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController,
     startDestination: Screen = Screen.Goals,
@@ -62,8 +68,7 @@ fun PavlovNavHost(
         navigation<MainRoute>(
             startDestination = startDestination,
         ) {
-            composable<Screen.Goals>() { entry ->
-                val sharedViewModel = entry.sharedViewModel<SharedViewModel>(navController)
+            composable<Screen.Goals>() {
                 val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
                 /**
                  * A function that initializes the viewModel on the first call using the factoryProducer
@@ -84,15 +89,19 @@ fun PavlovNavHost(
                 GoalsListScreen(
                     state = state,
                     sharedState = sharedState,
-                    onEvent = { goalsViewModel.onEvent(it) },
+                    onEvent = {
+                        when(it) {
+                            is GoalsEvent -> goalsViewModel.onEvent(it)
+                            is SharedEvent -> sharedViewModel.onEvent(it)
+                            else -> Log.e("GOALS", "Received an unsupported event: $it")
+                        }},
                     onNavigate = {
                         navController.navigate(it)
                         sharedViewModel.onEvent(SharedEvent.SetScreen(it))
                     }
                 )
             }
-            composable<Screen.Settings> { entry ->
-                val sharedViewModel = entry.sharedViewModel<SharedViewModel>(navController)
+            composable<Screen.Settings> {
                 val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
 
                 val settingsViewModel = viewModel(SettingsViewModel::class)
@@ -100,7 +109,12 @@ fun PavlovNavHost(
                 SettingsScreen(
                     state = settingsState,
                     sharedState = sharedState,
-                    onEvent = { settingsViewModel.onEvent(it) },
+                    onEvent = {
+                        when(it) {
+                            is SettingsEvent -> settingsViewModel.onEvent(it)
+                            is SharedEvent -> sharedViewModel.onEvent(it)
+                            else -> Log.e("GOALS", "Received an unsupported event: $it")
+                    }},
                     onNavigate = {
                         navController.navigate(it)
                         sharedViewModel.onEvent(SharedEvent.SetScreen(it))
@@ -108,8 +122,7 @@ fun PavlovNavHost(
                 )
 
             }
-            composable<Screen.Casino> { entry ->
-                val sharedViewModel = entry.sharedViewModel<SharedViewModel>(navController)
+            composable<Screen.Casino> {
                 val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
 
                 val casinoViewModel = viewModel(CasinoViewModel::class)
@@ -117,7 +130,12 @@ fun PavlovNavHost(
                 CasinoScreen(
                     state = casinoState,
                     sharedState = sharedState,
-                    onEvent = { casinoViewModel.onEvent(it) },
+                    onEvent = {
+                        when(it) {
+                            is CasinoEvent -> casinoViewModel.onEvent(it)
+                            is SharedEvent -> sharedViewModel.onEvent(it)
+                            else -> Log.e("GOALS", "Received an unsupported event: $it")
+                        }},
                     onNavigate = {
                         navController.navigate(it)
                         sharedViewModel.onEvent(SharedEvent.SetScreen(it))
@@ -197,15 +215,4 @@ fun PavlovNavbar(
             )
         }
     }
-}
-
-@Composable
-inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(
-    navController: NavHostController,
-): T {
-    val navGraphRoute = destination.parent?.route ?: return viewModel()
-    val parentEntry = remember(this) {
-        navController.getBackStackEntry(navGraphRoute)
-    }
-    return viewModel(parentEntry)
 }

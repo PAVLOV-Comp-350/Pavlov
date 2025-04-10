@@ -1,4 +1,4 @@
 package com.example.pavlov.viewmodels
 
-sealed interface SettingsEvent {
+sealed interface SettingsEvent : AnyEvent {
 }

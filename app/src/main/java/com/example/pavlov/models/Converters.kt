@@ -14,7 +14,7 @@ import kotlin.time.Duration
 class Converters {
     private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
-    @TypeConverter fun fromTimestamp(value: String?): LocalDateTime? {
+    @TypeConverter fun TimestamptoDate(value: String?): LocalDateTime? {
         return value?.let { LocalDateTime.parse(it, formatter) }
     }
 
@@ -38,5 +38,14 @@ class Converters {
     @TypeConverter fun IntToGoalFrequency(v: Int?): GoalFrequency? {
         if (v == null) return null
         return GoalFrequency.entries[v]
+    }
+
+    @TypeConverter fun PavlovDaysOfWeekToInt(days: PavlovDaysOfWeek?): Int? {
+        return days?.toInt()
+    }
+
+    @TypeConverter fun IntToPavlovDaysOfWeek(v: Int?): PavlovDaysOfWeek? {
+        if (v == null) return null
+        return PavlovDaysOfWeek(v)
     }
 }

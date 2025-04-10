@@ -11,4 +11,5 @@ data class GoalsState(
     val isEditMode: Boolean = false,
     val newGoal: Goal = Goal(),
     val showTimePickerDialog: Boolean = false,
+    val xp: Int = 0,
 )

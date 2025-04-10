@@ -46,6 +46,7 @@ class SharedViewModel: ViewModel() {
                     collectableTarget = event.target
                 )
             }
+
         }
     }
 

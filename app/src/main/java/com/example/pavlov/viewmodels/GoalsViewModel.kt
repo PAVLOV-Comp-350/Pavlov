@@ -151,7 +151,7 @@ class GoalsViewModel(
                     ))
                     _state.update { current ->
                         current.copy(
-                            xp = current.xp + 10 // You can change the value to any reward logic
+                            xp = current.xp + 10  // You can change the value to any reward logic
                         )
                     }
                 }

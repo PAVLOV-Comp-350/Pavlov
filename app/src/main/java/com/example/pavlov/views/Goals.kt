@@ -77,6 +77,7 @@ fun GoalsListScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
+
             Spacer(modifier = Modifier.height(8.dp))
 
             if (state.pendingGoals.isEmpty() && state.completedGoals.isEmpty()) {

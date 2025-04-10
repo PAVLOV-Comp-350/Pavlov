@@ -12,4 +12,5 @@ data class GoalsState(
     val newGoal: Goal = Goal(),
     val showTimePickerDialog: Boolean = false,
     val xp: Int = 0,
+
 )

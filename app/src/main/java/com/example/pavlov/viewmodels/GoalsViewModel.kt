@@ -181,6 +181,20 @@ class GoalsViewModel(
                     )
                 }
             }
+
+            is GoalsEvent.ExpandGoalItem -> {
+                _state.update { current ->
+                    val mut = current.expandedGoals.toMutableSet()
+                    if (current.expandedGoals.contains(event.goalId)) {
+                        mut.remove(event.goalId)
+                    } else {
+                        mut.add(event.goalId)
+                    }
+                    current.copy(
+                        expandedGoals = mut,
+                    )
+                }
+            }
         }
     }
 

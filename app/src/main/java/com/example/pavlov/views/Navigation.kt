@@ -164,7 +164,7 @@ fun PavlovNavbar(
 ) {
     val items = listOf(
         BottomNavigationItem(
-            title = "Home",
+            title = "Goals",
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home,
             hasNews = false,

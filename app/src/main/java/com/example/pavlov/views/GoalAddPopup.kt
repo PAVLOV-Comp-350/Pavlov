@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.window.DialogProperties
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
 
@@ -119,7 +120,7 @@ fun GoalAddPopup(
                 ) {
                     Text("Cancel")
                 }
-            }
+            },
         )
 
         if (state.showTimePickerDialog) {

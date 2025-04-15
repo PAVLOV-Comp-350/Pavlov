@@ -7,6 +7,7 @@ import com.example.pavlov.utils.Vec2
 *  This interface defines all of the user interaction events that happen in the Goals Screen
 *  */
 sealed interface GoalsEvent : AnyEvent {
+    data class ExpandGoalItem(val goalId: Int) : GoalsEvent
     data class MarkGoalComplete(val goalId: Int) : GoalsEvent
     data object ShowAddGoalAlert : GoalsEvent
     data object HideAddGoalAlert : GoalsEvent

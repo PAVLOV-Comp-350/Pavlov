@@ -2,14 +2,17 @@ package com.example.pavlov.viewmodels
 
 import androidx.lifecycle.ViewModel
 import android.util.Log
+import androidx.lifecycle.viewModelScope
 import androidx.room.util.getColumnIndex
 import com.example.pavlov.PavlovApplication
 import com.example.pavlov.models.RouletteGameState
 import com.example.pavlov.models.ScratcherCell
 import com.example.pavlov.models.ScratcherGameState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class CasinoViewModel: ViewModel() {
@@ -65,21 +68,23 @@ class CasinoViewModel: ViewModel() {
             }
 
             is RouletteEvent.SelectPick -> {
-                val roulettePicks = listOf("1 - 12", "13 - 24", "25 - 36", "00") + (0..36).map { it.toString() }
+                val gameState = _state.value.rouletteGameState ?: return
 
-                // Safely access rouletteGameState
-                _state.value.rouletteGameState?.let { gameState ->
-                    val myPick = roulettePicks.getOrNull(gameState.pickIndex) ?: "Invalid Pick"
+                if (gameState.isSpinning) return
 
-                    _state.update {
-                        it.copy(
-                            rouletteGameState = gameState.copy(
-                                pick = myPick
-                            )
+                val roulettePicks = gameState.board
+                val selectedPick = roulettePicks.getOrNull(event.pickIndex) ?: "Invalid Pick"
+
+                _state.update {
+                    it.copy(
+                        rouletteGameState = gameState.copy(
+                            pickIndex = event.pickIndex,
+                            pick = selectedPick
                         )
-                    }
+                    )
                 }
             }
+
 
             is RouletteEvent.Spin -> {
                 _state.value.rouletteGameState?.let { gameState ->
@@ -90,31 +95,79 @@ class CasinoViewModel: ViewModel() {
                             )
                         )
                     }
+
+                    // Launch the coroutine to stop spinning after 3 seconds
+                    viewModelScope.launch {
+                        delay(3000L) // Wait 3 seconds
+
+                        // Randomly select the winning pick
+                        val randomWin = rouletteGetRandomWin()
+
+                        _state.update {
+                            it.copy(
+                                rouletteGameState = it.rouletteGameState?.copy(
+                                    win = randomWin
+                                )
+                            )
+                        }
+
+                        // Trigger StopSpinning
+                        handleRouletteEvent(RouletteEvent.StopSpinning)
+                    }
                 }
             }
 
             is RouletteEvent.StopSpinning -> {
                 _state.value.rouletteGameState?.let { gameState ->
-                    if(gameState.win == gameState.pick) {
-                        if(gameState.pickIndex <= 3){
-                            _state.update {
-                                it.copy(
-                                    rouletteGameState = gameState.copy(
-                                        isSpinning = false,
-                                        totalPrize = 16
-                                    )
-                                )
-                            }
-                        } else {
-                            _state.update {
-                                it.copy(
-                                    rouletteGameState = gameState.copy(
-                                        isSpinning = false,
-                                        totalPrize = 280
-                                    )
-                                )
-                            }
+                    val winningNumber = gameState.win
+                    val selectedIndex = gameState.pickIndex
+                    val selectedPick = gameState.pick
+
+                    val isWin = when (selectedPick) {
+                        "1 - 12" -> {
+                            winningNumber.toIntOrNull()?.let { it in 1..12 } ?: false
                         }
+
+                        "13 - 24" -> {
+                            winningNumber.toIntOrNull()?.let { it in 13..24 } ?: false
+                        }
+
+                        "25 - 36" -> {
+                            winningNumber.toIntOrNull()?.let { it in 25..36 } ?: false
+                        }
+
+                        else -> {
+                            // Exact match for "00", "0", or number strings
+                            selectedPick == winningNumber
+                        }
+                    }
+                    val prize = if (isWin) {
+                        if (selectedPick == "00" || selectedPick == "0") {
+                            280
+                        } else if (selectedIndex <= 3) { // These are group bets: 1-12, 13-24, 25-36
+                            16
+                        } else {
+                            280
+                        }
+                    } else 0
+
+                    val displayMessage = if (isWin) "You Win!" else "You Lose!"
+                    val message = "Winning Number: $winningNumber $displayMessage"
+
+                    _state.update {
+                        it.copy(
+                            rouletteGameState = gameState.copy(
+                                totalPrize = prize,
+                                resultMessage = message
+                            )
+                        )
+                    }
+
+                    //Auto-close game
+                    viewModelScope.launch {
+                        delay(3000)
+                        handleRouletteEvent(RouletteEvent.CollectPrize)
+                        handleRouletteEvent(RouletteEvent.CloseGame)
                     }
                 }
             }
@@ -162,9 +215,8 @@ class CasinoViewModel: ViewModel() {
     }
 
     private fun rouletteGetRandomWin(): String{
-        val picks = listOf("00") + (0..36).map {it.toString()}
-        val newWin = picks.random()
-        return newWin
+        val picks = listOf("00", "0") + (1..36).map {it.toString()}
+        return picks.random()
     }
 
     private fun handleScratcherEvent(event: ScratcherEvent) {

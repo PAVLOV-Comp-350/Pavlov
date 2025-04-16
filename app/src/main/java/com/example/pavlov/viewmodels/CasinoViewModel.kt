@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import androidx.room.util.getColumnIndex
 import com.example.pavlov.PavlovApplication
+import com.example.pavlov.models.CardGameState
 import com.example.pavlov.models.RouletteGameState
 import com.example.pavlov.models.ScratcherCell
 import com.example.pavlov.models.ScratcherGameState
@@ -34,7 +35,8 @@ class CasinoViewModel: ViewModel() {
                     it.copy(
                         selectedGame = null,
                         scratcherGameState = null,
-                        rouletteGameState = null
+                        rouletteGameState = null,
+                        cardGameState = null
                     )
                 }
             }
@@ -43,6 +45,7 @@ class CasinoViewModel: ViewModel() {
                 when (event.game.name) {
                     "Scratcher" -> initScratcherGame()
                     "Roulette" -> initRouletteGame()
+                    "Cards" -> initCardGame()
                     else -> {}
                 }
             }
@@ -57,6 +60,51 @@ class CasinoViewModel: ViewModel() {
 
             is CasinoEvent.RouletteEvent -> {
                 handleRouletteEvent(event.event)
+            }
+
+            is CasinoEvent.CardEvent -> {
+                handleCardEvent(event.event)
+            }
+        }
+    }
+
+    private fun initCardGame(){
+        _state.update {
+            it.copy (
+                cardGameState = CardGameState(
+
+                )
+            )
+        }
+    }
+
+    private fun handleCardEvent(event: CardEvent){
+        when(event) {
+            is CardEvent.StartNewGame -> {
+                initCardGame()
+            }
+
+            is CardEvent.CollectPrize -> {
+                _state.value.cardGameState?.let { gameState ->
+                    if (gameState.totalPrize > 0) {
+                        PavlovApplication.addTreats(gameState.totalPrize)
+                        _state.update {
+                            it.copy(
+                                cardGameState = null,
+                                selectedGame = null
+                            )
+                        }
+                    }
+                }
+            }
+
+            is CardEvent.CloseGame -> {
+                _state.update {
+                    it.copy(
+                        cardGameState = null,
+                        selectedGame = null
+                    )
+                }
             }
         }
     }
@@ -88,71 +136,71 @@ class CasinoViewModel: ViewModel() {
 
             is RouletteEvent.Spin -> {
                 _state.value.rouletteGameState?.let { gameState ->
-                    _state.update {
-                        it.copy(
-                            rouletteGameState = gameState.copy(
-                                isSpinning = true
-                            )
-                        )
+                    //only spins roulette if a bet is picked
+                    if(gameState.pick.isBlank()){
+                        return@let
                     }
 
-                    // Launch the coroutine to stop spinning after 3 seconds
-                    viewModelScope.launch {
-                        delay(3000L) // Wait 3 seconds
-
-                        // Randomly select the winning pick
-                        val randomWin = rouletteGetRandomWin()
-
+                    if (!gameState.isSpinning) {
                         _state.update {
                             it.copy(
-                                rouletteGameState = it.rouletteGameState?.copy(
-                                    win = randomWin
+                                rouletteGameState = gameState.copy(
+                                    isSpinning = true
                                 )
                             )
                         }
 
-                        // Trigger StopSpinning
-                        handleRouletteEvent(RouletteEvent.StopSpinning)
+                        viewModelScope.launch {
+                            delay(3000L) // Wait 3 seconds
+
+                            val randomWin = rouletteGetRandomWin()
+
+                            _state.update {
+                                it.copy(
+                                    rouletteGameState = it.rouletteGameState?.copy(
+                                        win = randomWin
+                                    )
+                                )
+                            }
+
+                            // Trigger StopSpinning
+                            handleRouletteEvent(RouletteEvent.StopSpinning)
+                        }
                     }
                 }
             }
 
             is RouletteEvent.StopSpinning -> {
                 _state.value.rouletteGameState?.let { gameState ->
-                    val winningNumber = gameState.win
-                    val selectedIndex = gameState.pickIndex
-                    val selectedPick = gameState.pick
+                    val winningNumberStr = gameState.win.trim()         // e.g. "17" or "00"
+                    val selectedPickStr = gameState.pick.trim()         // e.g. "1 - 12" or "17"
 
-                    val isWin = when (selectedPick) {
-                        "1 - 12" -> {
-                            winningNumber.toIntOrNull()?.let { it in 1..12 } ?: false
-                        }
+                    val winningNumberInt = winningNumberStr.toIntOrNull()
 
-                        "13 - 24" -> {
-                            winningNumber.toIntOrNull()?.let { it in 13..24 } ?: false
-                        }
-
-                        "25 - 36" -> {
-                            winningNumber.toIntOrNull()?.let { it in 25..36 } ?: false
-                        }
-
-                        else -> {
-                            // Exact match for "00", "0", or number strings
-                            selectedPick == winningNumber
-                        }
+                    val isWin = if (selectedPickStr.contains("-")) {
+                        // Handle range-based picks like "1 - 12"
+                        val rangeParts = selectedPickStr.split("-").map { it.trim().toIntOrNull() }
+                        if (rangeParts.size == 2 && winningNumberInt != null) {
+                            val (start, end) = rangeParts
+                            if (start != null && end != null) {
+                                winningNumberInt in start..end
+                            } else false
+                        } else false
+                    } else {
+                        // Exact match case (numbers or "0", "00")
+                        selectedPickStr == winningNumberStr
                     }
+
                     val prize = if (isWin) {
-                        if (selectedPick == "00" || selectedPick == "0") {
-                            280
-                        } else if (selectedIndex <= 3) { // These are group bets: 1-12, 13-24, 25-36
-                            16
-                        } else {
-                            280
+                        when {
+                            selectedPickStr == "0" || selectedPickStr == "00" -> 280
+                            selectedPickStr.contains("-") -> 16
+                            else -> 280
                         }
                     } else 0
 
                     val displayMessage = if (isWin) "You Win!" else "You Lose!"
-                    val message = "Winning Number: $winningNumber $displayMessage"
+                    val message = "Winning Number: $winningNumberStr $displayMessage"
 
                     _state.update {
                         it.copy(
@@ -198,16 +246,13 @@ class CasinoViewModel: ViewModel() {
     }
 
     private fun initRouletteGame() {
-        val win = rouletteGetRandomWin()
-
         _state.update {
             it.copy(
                 rouletteGameState = RouletteGameState(
                     isSpinning = false,
                     pick = "",
                     board = listOf("1 - 12", "13 - 24", "25 - 36", "00") + (0..36).map {it.toString()},
-                    pickIndex = 0,
-                    win = win,
+                    pickIndex = -1,
                     totalPrize = 0
                 )
             )

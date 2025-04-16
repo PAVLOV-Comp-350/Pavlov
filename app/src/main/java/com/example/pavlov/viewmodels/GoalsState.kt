@@ -7,6 +7,7 @@ import com.example.pavlov.models.PavlovDaysOfWeek
 data class GoalsState(
     val pendingGoals: List<Goal> = emptyList(),
     val completedGoals: List<Goal> = emptyList(),
+    val expandedGoals: Set<Int> = emptySet(),
     val showPopup: Boolean = false,
     val isEditMode: Boolean = false,
     val newGoal: Goal = Goal(),

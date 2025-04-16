@@ -12,6 +12,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.pavlov.viewmodels.CasinoEvent
 import com.example.pavlov.viewmodels.CasinoState
 import com.example.pavlov.viewmodels.AnyEvent
+import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedState
 
 /**
@@ -24,14 +25,13 @@ fun CasinoScreen(
     state: CasinoState,
     sharedState: SharedState,
     onEvent: (AnyEvent) -> Unit,
-    onNavigate: (Screen) -> Unit,
 ){
     Scaffold(
         topBar = { PavlovTopBar(sharedState, onEvent = {onEvent(it)}) },
         bottomBar = {
             PavlovNavbar(
                 activeScreen = sharedState.activeScreen,
-                onNavigate = onNavigate
+                onNavigate = {onEvent(SharedEvent.Navigate(it))}
             )
         },
     ) { paddingValues ->

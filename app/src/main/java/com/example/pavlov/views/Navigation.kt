@@ -41,16 +41,27 @@ import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedViewModel
 import kotlinx.serialization.Serializable
 
-@Serializable object MainRoute
 
-sealed interface Screen {
+sealed interface Destination {
     @Serializable
-    data object Goals : Screen
+    data object MainDestination : MainRoute
     @Serializable
-    data object Settings : Screen
-    @Serializable
-    data object Casino : Screen
+    data object CasinoDestination : CasinoRoute
 }
+
+sealed interface MainRoute: Destination {
+    @Serializable
+    data object Goals : MainRoute
+    @Serializable
+    data object Settings : MainRoute
+}
+
+sealed interface CasinoRoute : Destination {
+    @Serializable
+    data object Casino : CasinoRoute
+}
+
+
 
 
 
@@ -59,16 +70,15 @@ fun PavlovNavHost(
     sharedViewModel: SharedViewModel,
     modifier: Modifier = Modifier,
     navController: NavHostController,
-    startDestination: Screen = Screen.Goals,
 ) {
     NavHost(
         navController = navController,
-        startDestination = MainRoute,
+        startDestination = Destination.MainDestination,
     ) {
-        navigation<MainRoute>(
-            startDestination = startDestination,
+        navigation<Destination.MainDestination>(
+            startDestination = MainRoute.Goals,
         ) {
-            composable<Screen.Goals>() {
+            composable<MainRoute.Goals>() {
                 val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
                 /**
                  * A function that initializes the viewModel on the first call using the factoryProducer
@@ -92,16 +102,18 @@ fun PavlovNavHost(
                     onEvent = {
                         when(it) {
                             is GoalsEvent -> goalsViewModel.onEvent(it)
-                            is SharedEvent -> sharedViewModel.onEvent(it)
+                            is SharedEvent -> when(it) {
+                                is SharedEvent.Navigate -> {
+                                    navController.navigate(it.destination)
+                                    sharedViewModel.onEvent(it)
+                                }
+                                else -> sharedViewModel.onEvent(it)
+                            }
                             else -> Log.e("GOALS", "Received an unsupported event: $it")
                         }},
-                    onNavigate = {
-                        navController.navigate(it)
-                        sharedViewModel.onEvent(SharedEvent.SetScreen(it))
-                    }
                 )
             }
-            composable<Screen.Settings> {
+            composable<MainRoute.Settings> {
                 val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
 
                 val settingsViewModel = viewModel(SettingsViewModel::class)
@@ -112,35 +124,43 @@ fun PavlovNavHost(
                     onEvent = {
                         when(it) {
                             is SettingsEvent -> settingsViewModel.onEvent(it)
-                            is SharedEvent -> sharedViewModel.onEvent(it)
+                            is SharedEvent -> when(it) {
+                                is SharedEvent.Navigate -> {
+                                    navController.navigate(it.destination)
+                                    sharedViewModel.onEvent(it)
+                                }
+                                else -> sharedViewModel.onEvent(it)
+                            }
                             else -> Log.e("GOALS", "Received an unsupported event: $it")
                     }},
-                    onNavigate = {
-                        navController.navigate(it)
-                        sharedViewModel.onEvent(SharedEvent.SetScreen(it))
-                    }
                 )
 
             }
-            composable<Screen.Casino> {
-                val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
+            navigation<Destination.CasinoDestination>(
+                startDestination = CasinoRoute.Casino
+            ) {
+                composable<CasinoRoute.Casino> {
+                    val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
 
-                val casinoViewModel = viewModel(CasinoViewModel::class)
-                val casinoState by casinoViewModel.state.collectAsState()
-                CasinoScreen(
-                    state = casinoState,
-                    sharedState = sharedState,
-                    onEvent = {
-                        when(it) {
-                            is CasinoEvent -> casinoViewModel.onEvent(it)
-                            is SharedEvent -> sharedViewModel.onEvent(it)
-                            else -> Log.e("GOALS", "Received an unsupported event: $it")
-                        }},
-                    onNavigate = {
-                        navController.navigate(it)
-                        sharedViewModel.onEvent(SharedEvent.SetScreen(it))
-                    }
-                )
+                    val casinoViewModel = viewModel(CasinoViewModel::class)
+                    val casinoState by casinoViewModel.state.collectAsState()
+                    CasinoScreen(
+                        state = casinoState,
+                        sharedState = sharedState,
+                        onEvent = {
+                            when(it) {
+                                is CasinoEvent -> casinoViewModel.onEvent(it)
+                                is SharedEvent -> when(it) {
+                                    is SharedEvent.Navigate -> {
+                                        navController.navigate(it.destination)
+                                        sharedViewModel.onEvent(it)
+                                    }
+                                    else -> sharedViewModel.onEvent(it)
+                                }
+                                else -> Log.e("GOALS", "Received an unsupported event: $it")
+                            }},
+                    )
+            }
 
             }
         }
@@ -153,14 +173,14 @@ data class BottomNavigationItem(
     val unselectedIcon: ImageVector,
     val hasNews: Boolean,
     val badgeCount: Int? = null,
-    val screenId: Screen,
+    val screenId: Destination,
 )
 
 @Composable
 fun PavlovNavbar(
     modifier: Modifier = Modifier,
-    activeScreen: Screen,
-    onNavigate: (Screen) -> Unit,
+    activeScreen: Destination,
+    onNavigate: (Destination) -> Unit,
 ) {
     val items = listOf(
         BottomNavigationItem(
@@ -168,21 +188,21 @@ fun PavlovNavbar(
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home,
             hasNews = false,
-            screenId = Screen.Goals
+            screenId = MainRoute.Goals,
         ),
         BottomNavigationItem(
             title = "Casino",
             selectedIcon = Icons.Filled.AddCircle,
             unselectedIcon = Icons.Outlined.AddCircle,
             hasNews = false,
-            screenId = Screen.Casino
+            screenId = CasinoRoute.Casino
         ),
         BottomNavigationItem(
             title = "Settings",
             selectedIcon = Icons.Filled.Settings,
             unselectedIcon = Icons.Outlined.Settings,
             hasNews = false,
-            screenId = Screen.Settings
+            screenId = MainRoute.Settings
         ),
     )
     NavigationBar {

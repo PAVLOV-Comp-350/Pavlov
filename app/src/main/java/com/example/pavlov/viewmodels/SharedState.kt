@@ -1,10 +1,11 @@
 package com.example.pavlov.viewmodels
 
 import com.example.pavlov.utils.Vec2
-import com.example.pavlov.views.Screen
+import com.example.pavlov.views.Destination
+import com.example.pavlov.views.MainRoute
 
 data class SharedState(
-    val activeScreen: Screen = Screen.Goals,
+    val activeScreen: Destination = MainRoute.Goals,
     val treats: Int = 0,
     val rewardCollectables: List<GoalRewardCollectable> = emptyList(),
     val collectableTarget: Vec2 = Vec2.Zero,

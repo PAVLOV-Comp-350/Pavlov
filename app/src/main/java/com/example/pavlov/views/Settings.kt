@@ -24,6 +24,7 @@ import com.example.pavlov.theme.ThemeSwitch
 import com.example.pavlov.viewmodels.AnyEvent
 import com.example.pavlov.viewmodels.SettingsEvent
 import com.example.pavlov.viewmodels.SettingsState
+import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedState
 
 /**
@@ -38,11 +39,15 @@ fun SettingsScreen(
     state: SettingsState,
     sharedState: SharedState,
     onEvent: (AnyEvent) -> Unit,
-    onNavigate: (Screen) -> Unit,
 ) {
     Scaffold(
         topBar = { PavlovTopBar(sharedState, onEvent = {onEvent(it)}) },
-        bottomBar = { PavlovNavbar(activeScreen = sharedState.activeScreen, onNavigate = onNavigate) },
+        bottomBar = {
+            PavlovNavbar(
+                activeScreen = sharedState.activeScreen,
+                onNavigate = {onEvent(SharedEvent.Navigate(it))}
+            )
+        },
     ) { padding ->
         val isDarkMode by PavlovApplication.isDarkTheme.collectAsState()
         Column(modifier = Modifier.padding(padding)) {

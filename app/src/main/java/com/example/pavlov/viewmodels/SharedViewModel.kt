@@ -32,9 +32,9 @@ class SharedViewModel: ViewModel() {
 
     fun onEvent(event: SharedEvent) {
         when(event) {
-            is SharedEvent.SetScreen -> {
+            is SharedEvent.Navigate -> {
                 _state.value = _state.value.copy(
-                    activeScreen = event.screen
+                    activeScreen = event.destination
                 )
             }
             is SharedEvent.UpdateRewardCollectables -> updateAllCollectables(_state.value.collectableTarget)

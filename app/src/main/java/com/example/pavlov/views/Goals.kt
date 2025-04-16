@@ -81,7 +81,6 @@ fun GoalsListScreen(
     state: GoalsState,
     sharedState: SharedState,
     onEvent: (AnyEvent) -> Unit,
-    onNavigate: (Screen) -> Unit,
 ) {
 
     Scaffold(
@@ -99,7 +98,7 @@ fun GoalsListScreen(
         bottomBar = {
             PavlovNavbar(
                 activeScreen = sharedState.activeScreen,
-                onNavigate = onNavigate
+                onNavigate = {onEvent(SharedEvent.Navigate(it))}
             )
         },
     ) { paddingValues ->
@@ -521,7 +520,6 @@ fun GoalsPreview() {
             state = state,
             sharedState = SharedState(),
             onEvent = {},
-            onNavigate = {},
         )
     }
 }

@@ -31,9 +31,15 @@ data class Goal(
     /** The target amount of the unit that satisfies the goal */
     @ColumnInfo(defaultValue = "0") val target: Int = 0,
     /** Days of the week goal is active */
-    val activeDays: PavlovDaysOfWeek = PavlovDaysOfWeek.ALL_DAYS,
+    val activeDays: PavlovDaysOfWeek = PavlovDaysOfWeek(0),
     /** Scheduled time for the task */
     @ColumnInfo(defaultValue = "540") val scheduledTimeMinutes: Int = 540,
+    /** The best streak this goal has achieved */
+    @ColumnInfo(defaultValue = "0") val bestStreak: Int = 0,
+    /** When the goal was last completed */
+    @ColumnInfo(name = "last_completion_date") val lastCompletionDate: LocalDateTime? = null,
+    /** Total number of times the goal has been completed */
+    @ColumnInfo(defaultValue = "0") val totalCompletions: Int = 0,
 )
 
 /**

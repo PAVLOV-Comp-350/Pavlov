@@ -373,7 +373,7 @@ fun GoalItem(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Streak: ${goal.streak} days",
+                                        text = "Streak: ${goal.streak}x",
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.secondary
                                     )

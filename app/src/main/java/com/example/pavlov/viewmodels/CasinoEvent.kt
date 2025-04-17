@@ -9,4 +9,5 @@ sealed interface CasinoEvent : AnyEvent {
     data class SpendTreats(val amount: Int) : CasinoEvent
     data class ScratcherEvent(val event: com.example.pavlov.viewmodels.ScratcherEvent) : CasinoEvent
     data class RouletteEvent( val event: com.example.pavlov.viewmodels.RouletteEvent) : CasinoEvent
+    data class CardEvent( val event: com.example.pavlov.viewmodels.CardEvent) : CasinoEvent
 }

@@ -126,6 +126,38 @@ fun CasinoScreen(
                         }
                     }
 
+                game.name == "Cards" && state.cardGameState !=null -> {
+                    Dialog(
+                        onDismissRequest = { onEvent(CasinoEvent.CloseGameDialog) },
+                        properties = DialogProperties(
+                            dismissOnBackPress = true,
+                            dismissOnClickOutside = false,
+                            usePlatformDefaultWidth = false
+                        )
+                    ) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth( 0.95f)
+                                .fillMaxHeight(0.9f)
+                                .padding(8.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.cardElevation(
+                                defaultElevation = 8.dp
+                            )
+                        ) {
+                            CardGame(
+                                gameState = state.cardGameState,
+                                onEvent = { cardEvent ->
+                                    onEvent(CasinoEvent.CardEvent(cardEvent))
+                                }
+                            )
+                        }
+                    }
+                }
+
                 else -> {
                     GameDialog(
                         game = game,

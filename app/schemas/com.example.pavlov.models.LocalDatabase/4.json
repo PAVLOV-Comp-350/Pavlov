@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 4,
-    "identityHash": "2b7355fa39cfbdff3065ed3f7e2e30c9",
+    "identityHash": "7d46461ace6902224288374e569e0c5e",
     "entities": [
       {
         "tableName": "goals",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `streak` INTEGER NOT NULL, `frequency` INTEGER NOT NULL DEFAULT 0, `simple` INTEGER NOT NULL DEFAULT FALSE, `unit` TEXT NOT NULL DEFAULT 'No Unit', `current` INTEGER NOT NULL DEFAULT 0, `target` INTEGER NOT NULL DEFAULT 0, `activeDays` INTEGER NOT NULL, `scheduledTimeMinutes` INTEGER NOT NULL DEFAULT 540)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `streak` INTEGER NOT NULL, `frequency` INTEGER NOT NULL DEFAULT 0, `simple` INTEGER NOT NULL DEFAULT FALSE, `unit` TEXT NOT NULL DEFAULT 'No Unit', `current` INTEGER NOT NULL DEFAULT 0, `target` INTEGER NOT NULL DEFAULT 0, `activeDays` INTEGER NOT NULL, `scheduledTimeMinutes` INTEGER NOT NULL DEFAULT 540, `bestStreak` INTEGER NOT NULL DEFAULT 0, `last_completion_date` TEXT, `totalCompletions` INTEGER NOT NULL DEFAULT 0)",
         "fields": [
           {
             "fieldPath": "id",
@@ -79,6 +79,26 @@
             "affinity": "INTEGER",
             "notNull": true,
             "defaultValue": "540"
+          },
+          {
+            "fieldPath": "bestStreak",
+            "columnName": "bestStreak",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "lastCompletionDate",
+            "columnName": "last_completion_date",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "totalCompletions",
+            "columnName": "totalCompletions",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -132,7 +152,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2b7355fa39cfbdff3065ed3f7e2e30c9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7d46461ace6902224288374e569e0c5e')"
     ]
   }
 }

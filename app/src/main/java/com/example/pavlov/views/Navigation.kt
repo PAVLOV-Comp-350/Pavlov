@@ -41,6 +41,7 @@ import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedViewModel
 import kotlinx.serialization.Serializable
 
+
 @Serializable object MainRoute
 
 sealed interface Screen {

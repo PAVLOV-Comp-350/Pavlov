@@ -15,5 +15,8 @@ data class CardGameState(
         "4S" + "4H" + "4C" + "4D" +
         "3S" + "3H" + "3C" + "3D" +
         "2S" + "2H" + "2C" + "2D"),
+    val hand: List<String> = listOf(),
+    val discarded: List<String> = listOf(),
+    val heldCards: List<String> = listOf(),
     val totalPrize: Int = 0,
 )

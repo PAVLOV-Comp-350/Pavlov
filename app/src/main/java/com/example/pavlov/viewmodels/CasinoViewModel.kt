@@ -72,9 +72,51 @@ class CasinoViewModel: ViewModel() {
         _state.update {
             it.copy (
                 cardGameState = CardGameState(
-
+                    deck = listOf(
+                        "AS" + "AH" + "AC" + "AD" +
+                                "KS" + "KH" + "kC" + "KD" +
+                                "QS" + "QH" + "QC" + "QD" +
+                                "JS" + "JH" + "JC" + "JD" +
+                                "10S" + "10H" + "10C" + "10D" +
+                                "9S" + "9H" + "9C" + "9D" +
+                                "8S" + "8H" + "8C" + "8D" +
+                                "7S" + "7H" + "7C" + "7D" +
+                                "6S" + "6H" + "6C" + "6D" +
+                                "5S" + "5H" + "5C" + "5D" +
+                                "4S" + "4H" + "4C" + "4D" +
+                                "3S" + "3H" + "3C" + "3D" +
+                                "2S" + "2H" + "2C" + "2D"),
+                    hand = listOf(),
+                    discarded = listOf(),
+                    totalPrize = 0
                 )
             )
+        }
+    }
+
+    private fun dealOneCard(){
+        _state.value.cardGameState?.let { gameState ->
+            if (gameState.deck.isNotEmpty()) {
+                //pick a random card from deck
+                val randomIndex = (gameState.deck.indices).random()
+                val selectedCard = gameState.deck[randomIndex]
+
+                //remove card from deck
+                val newDeck = gameState.deck.toMutableList()
+                newDeck.removeAt(randomIndex)
+
+                //add card to hand
+                val newHand = gameState.hand + selectedCard
+
+                _state.update {
+                    it.copy(
+                        cardGameState = gameState.copy(
+                            deck = newDeck,
+                            hand = newHand
+                        )
+                    )
+                }
+            }
         }
     }
 
@@ -82,6 +124,34 @@ class CasinoViewModel: ViewModel() {
         when(event) {
             is CardEvent.StartNewGame -> {
                 initCardGame()
+            }
+
+            is CardEvent.DealFromDeck -> {
+                dealOneCard()
+                viewModelScope.launch {
+                    delay(500)
+                }
+                dealOneCard()
+                viewModelScope.launch {
+                    delay(500)
+                }
+                dealOneCard()
+                viewModelScope.launch {
+                    delay(500)
+                }
+                dealOneCard()
+                viewModelScope.launch {
+                    delay(500)
+                }
+                dealOneCard()
+            }
+
+            is CardEvent.Redraw -> {
+
+            }
+
+            is CardEvent.Discard -> {
+
             }
 
             is CardEvent.CollectPrize -> {

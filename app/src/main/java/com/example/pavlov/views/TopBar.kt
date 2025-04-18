@@ -31,7 +31,22 @@ import com.example.pavlov.viewmodels.SharedState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.layout.height
-
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
+import androidx.compose.animation.core.*
+import androidx.compose.ui.geometry.Offset
+import com.example.pavlov.theme.Retro
+import com.example.pavlov.utils.getRank
+import com.example.pavlov.utils.getCurrentRankStartXp
+import com.example.pavlov.utils.getNextRankXP
+import com.airbnb.lottie.compose.*
+// androidx.compose.ui.text.font.FontWeight
+//import com.example.pavlov.theme.NablaFont
+import android.util.Log
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,6 +57,10 @@ fun PavlovTopBar(
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
+        navigationIcon = {
+            // 🐶 Live Pet animation on the left
+            LiveLottiePet()
+        },
         title = {
             Column(
                 modifier = Modifier
@@ -51,24 +70,9 @@ fun PavlovTopBar(
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = sharedState.activeScreen.toString(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
-                }
+                ) {}
 
                 Spacer(modifier = Modifier.height(6.dp)) // spacing between title and XP bar
-
-                LinearProgressIndicator(
-                    progress = sharedState.currentXp.toFloat() / sharedState.maxXp.toFloat(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp),
-                    color = Color(0xFF4CAF50),
-                    trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f)
-                )
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -82,17 +86,18 @@ fun PavlovTopBar(
             ) {
                 Text(
                     text = "${sharedState.treats}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontSize = 20.sp,
+                    fontFamily = Retro,
+                    fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
+
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     painter = painterResource(id = R.drawable.dog_treat),
                     contentDescription = "Total Treats",
                     tint = Color.Unspecified,
                     modifier = Modifier
-                        .size(24.dp)
+                        .size(30.dp)
                         .onGloballyPositioned {
                             if (it.isAttached) {
                                 val bounds = it.boundsInRoot()
@@ -108,8 +113,129 @@ fun PavlovTopBar(
                             }
                         },
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+
             }
         },
-        modifier = modifier
     )
 }
+
+@Composable
+fun ShimmeringXpBar(progress: Float) {
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+
+    val shimmerX by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerX"
+    )
+
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFFFFD700), // Gold
+            Color(0xFFFFFF00), // Bright yellow
+            Color(0xFFFFD700)
+        ),
+        start = Offset(shimmerX, 0f),
+        end = Offset(shimmerX + 200f, 0f)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(Color.DarkGray) // <-- this is the background track
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .background(shimmerBrush) // <-- shimmer only on the progress bar
+        )
+    }
+}
+
+
+
+@Composable
+fun RankAndXpBar(sharedState: SharedState) {
+    val currentXp = sharedState.currentXp
+
+    val rank = getRank(currentXp)
+    val rankStartXp = getCurrentRankStartXp(currentXp)
+    val nextRankXp = getNextRankXP(currentXp)
+
+    val xpInCurrentRank = (currentXp - rankStartXp).coerceAtLeast(0)
+    val xpToNextRank = (nextRankXp - rankStartXp).coerceAtLeast(1)
+    val progress = xpInCurrentRank.toFloat() / xpToNextRank.toFloat()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Text(
+                text = "$rank",
+                fontSize = 12.sp,
+                fontFamily = Retro,
+                color = Color.White
+            )
+
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        ShimmeringXpBar(progress = progress)
+    }
+}
+
+@Composable
+fun LiveLottiePet() {
+    val composition by rememberLottieComposition(
+        LottieCompositionSpec.Asset("dog_animation.json")
+    )
+
+    if (composition != null) {
+        Log.d("Lottie", "Composition loaded!")
+    } else {
+        Log.d("Lottie", "Composition is NULL")
+    }
+
+    val progress by animateLottieCompositionAsState(
+        composition,
+        iterations = LottieConstants.IterateForever
+    )
+
+    if (composition != null) {
+        LottieAnimation(
+            composition = composition,
+            progress = { progress },
+            modifier = Modifier.size(90.dp)
+        )
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

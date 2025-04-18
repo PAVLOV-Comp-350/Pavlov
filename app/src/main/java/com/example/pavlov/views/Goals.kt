@@ -85,7 +85,12 @@ fun GoalsListScreen(
 ) {
 
     Scaffold(
-        topBar = { PavlovTopBar(sharedState, onEvent = { onEvent(it) }) },
+        topBar = {
+            Column {
+                PavlovTopBar(sharedState, onEvent = { onEvent(it) })
+                RankAndXpBar(sharedState) // XP bar just below top bar
+            }
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEvent(GoalsEvent.ShowAddGoalAlert) },
@@ -108,6 +113,7 @@ fun GoalsListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+
             if (state.pendingGoals.isEmpty() && state.completedGoals.isEmpty()) {
                 EmptyGoalsDisplay()
             } else {
@@ -120,6 +126,7 @@ fun GoalsListScreen(
             }
         }
     }
+
 
 
     if (state.showPopup) {
@@ -270,161 +277,161 @@ fun GoalItem(
         enter =  expandVertically(),
         exit = shrinkVertically(),
     ) {
-    Card(
-        modifier = modifier
-            .animateContentSize()
-            .padding(4.dp)
-            .fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        onClick = { onEvent(GoalsEvent.ExpandGoalItem(goal.id)) },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(vertical = 4.dp, horizontal = 8.dp)
-                .fillMaxWidth()
+        Card(
+            modifier = modifier
+                .animateContentSize()
                 .padding(4.dp)
-        ) {
-            val titlePad = if(!expanded) 8.dp else 0.dp
-            val titleColor = if(completed)
-                MaterialTheme.colorScheme.onSurfaceVariant
-            else
-                MaterialTheme.colorScheme.onSurface
-            Text(
-                text = goal.title,
-                style = MaterialTheme.typography.titleLarge,
-                color = titleColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(titlePad)
+                .fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            onClick = { onEvent(GoalsEvent.ExpandGoalItem(goal.id)) },
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
             )
-            AnimatedVisibility(expanded) {
-                Column {
-                    if (goal.description.isNotBlank()) {
-                        Text(
-                            text = goal.description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        if (!completed) {
-                            var spawnCollectablePos by remember { mutableStateOf(Vec2(0f)) }
-                            Button(
-                                onClick = {
-                                    onEvent(
-                                        GoalsEvent.MarkGoalComplete(goal.id)
-                                    )
-                                    onEvent(
-                                        GoalsEvent.ExpandGoalItem(goal.id)
-                                    )
-                                    onEvent(
-                                        SharedEvent.GenerateCollectableRewards(
-                                            spawnCollectablePos
-                                        )
-                                    )
-                                    onEvent(
-                                        SharedEvent.GainXpFromTask
-                                    )
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.tertiary,
-                                    contentColor = MaterialTheme.colorScheme.onTertiary,
-                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                                modifier = Modifier
-                                    .padding(end = 16.dp)
-                                    .onGloballyPositioned {
-                                        if (it.isAttached) {
-                                            val bounds = it.boundsInRoot()
-                                            val off = it.positionInRoot()
-                                            spawnCollectablePos = Vec2(
-                                                x = (off.x + bounds.width / 2),
-                                                y = (off.y + bounds.height / 2),
-                                            )
-                                        }
-                                    },
-                            ) {
-                                Text(
-                                    text = "Complete"
-                                )
-                            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(vertical = 4.dp, horizontal = 8.dp)
+                    .fillMaxWidth()
+                    .padding(4.dp)
+            ) {
+                val titlePad = if(!expanded) 8.dp else 0.dp
+                val titleColor = if(completed)
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                else
+                    MaterialTheme.colorScheme.onSurface
+                Text(
+                    text = goal.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = titleColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(titlePad)
+                )
+                AnimatedVisibility(expanded) {
+                    Column {
+                        if (goal.description.isNotBlank()) {
+                            Text(
+                                text = goal.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
 
-                        Column {
+                        Row(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            if (!completed) {
+                                var spawnCollectablePos by remember { mutableStateOf(Vec2(0f)) }
+                                Button(
+                                    onClick = {
+                                        onEvent(
+                                            GoalsEvent.MarkGoalComplete(goal.id)
+                                        )
+                                        onEvent(
+                                            GoalsEvent.ExpandGoalItem(goal.id)
+                                        )
+                                        onEvent(
+                                            SharedEvent.GenerateCollectableRewards(
+                                                spawnCollectablePos
+                                            )
+                                        )
+                                        onEvent(
+                                            SharedEvent.GainXpFromTask
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.tertiary,
+                                        contentColor = MaterialTheme.colorScheme.onTertiary,
+                                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    modifier = Modifier
+                                        .padding(end = 16.dp)
+                                        .onGloballyPositioned {
+                                            if (it.isAttached) {
+                                                val bounds = it.boundsInRoot()
+                                                val off = it.positionInRoot()
+                                                spawnCollectablePos = Vec2(
+                                                    x = (off.x + bounds.width / 2),
+                                                    y = (off.y + bounds.height / 2),
+                                                )
+                                            }
+                                        },
+                                ) {
+                                    Text(
+                                        text = "Complete"
+                                    )
+                                }
+                            }
 
-                            // Show streak if available
-                            if (goal.streak > 0) {
+                            Column {
+
+                                // Show streak if available
+                                if (goal.streak > 0) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Streak: ${goal.streak}x",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                        val hours = goal.scheduledTimeMinutes / 60
+                                        val minutes = goal.scheduledTimeMinutes % 60
+                                        val displayHours = when {
+                                            hours == 0 -> 12
+                                            hours > 12 -> hours - 12
+                                            else -> hours
+                                        }
+                                        val period = if (hours < 12) "AM" else "PM"
+                                        val timeString =
+                                            String.format("%d:%02d %s", displayHours, minutes, period)
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "• $timeString",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                }
+                                //Display active days as small indicators
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Streak: ${goal.streak}x",
-                                        style = MaterialTheme.typography.labelMedium,
+                                        text = "Days: ",
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.secondary
                                     )
-                                    val hours = goal.scheduledTimeMinutes / 60
-                                    val minutes = goal.scheduledTimeMinutes % 60
-                                    val displayHours = when {
-                                        hours == 0 -> 12
-                                        hours > 12 -> hours - 12
-                                        else -> hours
+                                    PavlovDayOfWeek.entries.forEach {
+                                        DayDot(it, goal.activeDays)
                                     }
-                                    val period = if (hours < 12) "AM" else "PM"
-                                    val timeString =
-                                        String.format("%d:%02d %s", displayHours, minutes, period)
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "• $timeString",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.secondary
-                                    )
                                 }
+
                             }
-                            //Display active days as small indicators
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Days: ",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.secondary
+                            IconButton(onClick = { onEvent(GoalsEvent.ShowEditGoalAlert(goal.id)) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit goal",
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                                PavlovDayOfWeek.entries.forEach {
-                                    DayDot(it, goal.activeDays)
-                                }
                             }
-
-                        }
-                        IconButton(onClick = { onEvent(GoalsEvent.ShowEditGoalAlert(goal.id)) }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit goal",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
                         }
                     }
                 }
-            }
 
-        }
+            }
 
         }
     }

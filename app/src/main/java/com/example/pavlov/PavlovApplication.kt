@@ -45,6 +45,24 @@ class PavlovApplication : Application() {
         private val TREATS_KEY = "user_treats"
         private val _treats = MutableStateFlow<Int>(0)
         val treats = _treats.asStateFlow()
+        private val XP_KEY = "user_xp"
+        private val MAX_XP_KEY = "user_max_xp"
+        private val _xp = MutableStateFlow(0)
+        private val _maxXp = MutableStateFlow(100)
+
+        val xp = _xp.asStateFlow()
+        val maxXp = _maxXp.asStateFlow()
+
+        fun setXp(newXp: Int) {
+            preferences.edit().putInt(XP_KEY, newXp).apply()
+            _xp.value = newXp
+        }
+
+        fun setMaxXp(newMaxXp: Int) {
+            preferences.edit().putInt(MAX_XP_KEY, newMaxXp).apply()
+            _maxXp.value = newMaxXp
+        }
+
         fun addTreats(value: Int) {
             val newval = _treats.value + value
             preferences.edit().putInt(TREATS_KEY, newval).apply()
@@ -73,6 +91,9 @@ class PavlovApplication : Application() {
         preferences = PreferenceManager.getDefaultSharedPreferences(this)
         _isDarkTheme.value = preferences.getBoolean(DARK_MODE_KEY, false)
         _treats.value = preferences.getInt(TREATS_KEY, 0)
+        _xp.value = preferences.getInt(XP_KEY, 0)
+        _maxXp.value = preferences.getInt(MAX_XP_KEY, 100)
+
     }
 
 }

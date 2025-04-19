@@ -1,4 +1,6 @@
 package com.example.pavlov.models
+import java.util.UUID
+
 
 
 /**
@@ -14,6 +16,7 @@ data class ScratcherGameState(
  * a single cell in the scratcher game
  */
 data class ScratcherCell(
+    val id: String = UUID.randomUUID().toString(),
     val value: Int = 0,
     val isRevealed: Boolean = false
 )

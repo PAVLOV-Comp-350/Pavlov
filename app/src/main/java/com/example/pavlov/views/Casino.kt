@@ -9,6 +9,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.pavlov.PavlovApplication
 import com.example.pavlov.viewmodels.CasinoEvent
 import com.example.pavlov.viewmodels.CasinoState
 import com.example.pavlov.viewmodels.AnyEvent
@@ -45,12 +46,10 @@ fun CasinoScreen(
                     .fillMaxSize()
                     .padding(top = 8.dp)
             ) {
-                // Header
                 CasinoHeader(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
-                // Games List
                 CasinoGamesList(
                     onGameSelected = { game ->
                         onEvent(CasinoEvent.SelectGame(game))
@@ -59,7 +58,6 @@ fun CasinoScreen(
             }
         }
 
-        // Show game dialog when a game is selected
         state.selectedGame?.let { game ->
             when {
                 game.name == "Scratcher" && state.scratcherGameState != null -> {
@@ -157,13 +155,45 @@ fun CasinoScreen(
                         }
                     }
                 }
+                game.name == "Slots" && state.slotsGameState !=null -> {
+                    Dialog(
+                        onDismissRequest = { onEvent(CasinoEvent.CloseGameDialog) },
+                        properties = DialogProperties(
+                            dismissOnBackPress = true,
+                            dismissOnClickOutside = false,
+                            usePlatformDefaultWidth = false
+                        )
+                    ) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth( 0.95f)
+                                .fillMaxHeight(0.9f)
+                                .padding(8.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.cardElevation(
+                                defaultElevation = 8.dp
+                            )
+                        ) {
+                            val currentTreats = PavlovApplication.treats.collectAsState().value
+                            SlotsGame(
+                                gameState = state.slotsGameState,
+                                onEvent = { slotsEvent ->
+                                    onEvent(CasinoEvent.SlotsEvent(slotsEvent))
+                                },
+                                availableTreats = sharedState.treats
+                            )
+                        }
+                    }
+                }
 
                 else -> {
                     GameDialog(
                         game = game,
                         onDismiss = { onEvent(CasinoEvent.CloseGameDialog) },
                         onPlay = {
-                            // Handles playing the game
                             game.costInTreats?.let { cost ->
                                 if (sharedState.treats >= cost) {
                                     onEvent(CasinoEvent.SpendTreats(cost))

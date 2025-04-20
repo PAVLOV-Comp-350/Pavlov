@@ -61,10 +61,11 @@ fun RouletteGame(
             .fillMaxWidth()
             .padding(16.dp),
         contentAlignment = Alignment.Center
-    ){
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             // Game title
             Text(
@@ -74,21 +75,28 @@ fun RouletteGame(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-
             Text(
                 text = "Select your Pick, then Spin to Win!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            SpinningWheel(isSpinning = gameState.isSpinning)
+            SpinningWheel(
+                isSpinning = gameState.isSpinning,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+
 
             TextButton(
-                onClick = { onEvent(RouletteEvent.Spin) }
+                onClick = {
+                    if (gameState.pick.isNotBlank()) {
+                        onEvent(RouletteEvent.Spin)
+                    }
+                },
+                enabled = !gameState.isSpinning && gameState.pick.isNotBlank()
             ) {
                 Text("Spin")
             }
-            //fill game stuff here
 
             RouletteBettingBoard(
                 selectedIndex = gameState.pickIndex,
@@ -98,15 +106,36 @@ fun RouletteGame(
                 modifier = Modifier
             )
 
-            if(gameState.resultMessage.isNotBlank()) {
+
+            if (gameState.resultMessage.isNotBlank() && !gameState.isSpinning) {
+                val winningNumberStr = if (gameState.win.isNotBlank()) {
+                    "Winning Number: ${gameState.win}"
+                } else {
+                    val parts = gameState.resultMessage.split("")
+                    val winIndex = parts.indexOf("Number:")
+                    if (winIndex >= 0 && winIndex + 1 < parts.size) {
+                        "Winning Number: ${parts[winIndex + 1]}"
+                    } else {
+                        ""
+                    }
+                }
+                if (winningNumberStr.isNotBlank()) {
+                    Text(
+                        text = winningNumberStr,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+            if (gameState.pick.isBlank() && !gameState.isSpinning) {
                 Text(
-                    text = gameState.resultMessage,
-                    color = if (gameState.totalPrize > 0) Color.Green else Color.Red,
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "Please select a number first",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
-
             TextButton(
                 onClick = { onEvent(RouletteEvent.CloseGame) }
             ) {
@@ -114,8 +143,34 @@ fun RouletteGame(
             }
         }
     }
-}
 
+    val showWinNotification =
+        gameState.totalPrize > 0 && !gameState.isSpinning && gameState.resultMessage.isNotBlank()
+    val showLoseNotification =
+        gameState.totalPrize == 0 && !gameState.isSpinning && gameState.resultMessage.isNotBlank()
+
+    if (showWinNotification) {
+        WinNotification(
+            prizeAmount = gameState.totalPrize,
+            onComplete = {
+                onEvent(RouletteEvent.CloseGame)
+            }
+        )
+    }
+
+    if (showLoseNotification) {
+        LoseNotification(
+            gameName = "Roulette",
+            playCost = 8,
+            onTryAgain = {
+                onEvent(RouletteEvent.RestartGame)
+            },
+            onClose = {
+                onEvent(RouletteEvent.CloseGame)
+            }
+        )
+    }
+}
 @Composable
 fun RouletteBettingBoard(
     selectedIndex: Int,
@@ -126,24 +181,24 @@ fun RouletteBettingBoard(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement =  Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         roulettePicks.chunked(6).forEach { rowItems ->
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
-            ){
+            ) {
                 rowItems.forEach { label ->
                     val index = roulettePicks.indexOf(label)
                     val isSelected = index == selectedIndex
                     TextButton(
-                        onClick = { onEvent(RouletteEvent.SelectPick(index))},
+                        onClick = { onEvent(RouletteEvent.SelectPick(index)) },
                         modifier = Modifier
                             .clip(MaterialTheme.shapes.small)
                             .background(
                                 brush = Brush.linearGradient(
                                     colors = if (isSelected) {
-                                        CasinoTheme.EmeraldGradient.map { it.copy(alpha = 0.5f)}
+                                        CasinoTheme.EmeraldGradient.map { it.copy(alpha = 0.5f) }
                                     } else {
                                         CasinoTheme.EmeraldGradient
                                     }
@@ -161,40 +216,41 @@ fun RouletteBettingBoard(
     }
 }
 
-@Composable
-fun SpinningWheel(
-    isSpinning: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val rotation = remember { Animatable(0f) }
 
-    // Launch the animation if the wheel is spinning
-    LaunchedEffect(isSpinning) {
-        if (isSpinning) {
-            // Animate rotation over 3 seconds
-            rotation.animateTo(
-                targetValue = rotation.value + 1440f,  // Rotate 360 degrees
-                animationSpec = tween(
-                    durationMillis = 3000,
-                    easing = FastOutSlowInEasing
+        @Composable
+        fun SpinningWheel(
+            isSpinning: Boolean,
+            modifier: Modifier = Modifier
+        ) {
+            val rotation = remember { Animatable(0f) }
+
+            // Launch the animation if the wheel is spinning
+            LaunchedEffect(isSpinning) {
+                if (isSpinning) {
+                    // Animate rotation over 3 seconds
+                    rotation.animateTo(
+                        targetValue = rotation.value + 1440f,  // Rotate 360 degrees
+                        animationSpec = tween(
+                            durationMillis = 3000,
+                            easing = FastOutSlowInEasing
+                        )
+                    )
+                }
+            }
+
+            // Apply the rotation to the wheel's modifier
+            Box(
+                modifier = modifier
+                    .size(160.dp)
+                    .graphicsLayer(
+                        rotationZ = rotation.value // Apply rotation to the wheel
+                    )
+            ) {
+                // Add your roulette wheel image or shape here
+                Image(
+                    painter = painterResource(id = R.drawable.roulette_wheel), // Use a wheel image
+                    contentDescription = "Roulette Wheel",
+                    modifier = Modifier.fillMaxSize()
                 )
-            )
+            }
         }
-    }
-
-    // Apply the rotation to the wheel's modifier
-    Box(
-        modifier = modifier
-            .size(160.dp)
-            .graphicsLayer(
-                rotationZ = rotation.value // Apply rotation to the wheel
-            )
-    ) {
-        // Add your roulette wheel image or shape here
-        Image(
-            painter = painterResource(id = R.drawable.roulette_wheel), // Use a wheel image
-            contentDescription = "Roulette Wheel",
-            modifier = Modifier.fillMaxSize()
-        )
-    }
-}

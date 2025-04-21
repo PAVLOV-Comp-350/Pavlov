@@ -126,6 +126,23 @@ fun CasinoScreen(
                         }
                     }
 
+                game.name == "Pachinko" -> {
+                    GameDialog(
+                        game = game,
+                        onDismiss = { onEvent(CasinoEvent.CloseGameDialog) },
+                        onPlay = {
+                            // Handles playing the game
+                            game.costInTreats?.let { cost ->
+                                if (sharedState.treats >= cost) {
+                                    onEvent(CasinoEvent.SpendTreats(cost))
+                                    onEvent(SharedEvent.Navigate(CasinoRoute.Pachinko))
+                                }
+                            }
+                        },
+                        availableTreats = sharedState.treats
+                    )
+                }
+
                 else -> {
                     GameDialog(
                         game = game,

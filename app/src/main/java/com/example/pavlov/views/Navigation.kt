@@ -59,6 +59,8 @@ sealed interface MainRoute: Destination {
 sealed interface CasinoRoute : Destination {
     @Serializable
     data object Casino : CasinoRoute
+    @Serializable
+    data object Pachinko : CasinoRoute
 }
 
 
@@ -76,7 +78,9 @@ fun PavlovNavHost(
         startDestination = Destination.MainDestination,
     ) {
         navigation<Destination.MainDestination>(
-            startDestination = MainRoute.Goals,
+            // NOCHECK-IN
+//             startDestination = MainRoute.Goals,
+            startDestination = Destination.CasinoDestination,
         ) {
             composable<MainRoute.Goals>() {
                 val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
@@ -137,8 +141,28 @@ fun PavlovNavHost(
 
             }
             navigation<Destination.CasinoDestination>(
-                startDestination = CasinoRoute.Casino
+                // NOCHECK-IN
+//                 startDestination = CasinoRoute.Casino
+                startDestination = CasinoRoute.Pachinko
             ) {
+                composable<CasinoRoute.Pachinko> {
+                    val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
+
+                    PachinkoView(
+                        sharedState = sharedState,
+                        onEvent = {
+                            when(it) {
+                                is SharedEvent -> when(it) {
+                                    is SharedEvent.Navigate -> {
+                                        navController.navigate(it.destination)
+                                        sharedViewModel.onEvent(it)
+                                    }
+                                    else -> sharedViewModel.onEvent(it)
+                                }
+                                else -> Log.e("GOALS", "Received an unsupported event: $it")
+                            }},
+                    )
+                }
                 composable<CasinoRoute.Casino> {
                     val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
 

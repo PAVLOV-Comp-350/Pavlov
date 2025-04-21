@@ -49,6 +49,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.dyn4j)
     implementation(libs.androidx.preference.ktx)
 
     implementation(libs.androidx.room.runtime)

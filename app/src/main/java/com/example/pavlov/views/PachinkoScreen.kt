@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pavlov.games.PachinkoGameView
 import com.example.pavlov.viewmodels.AnyEvent
 import com.example.pavlov.viewmodels.PachinkoUiEvent
 import com.example.pavlov.viewmodels.PachinkoViewModel

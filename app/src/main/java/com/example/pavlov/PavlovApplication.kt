@@ -1,7 +1,11 @@
 package com.example.pavlov
 
 import android.app.Application
+import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.room.Room
 import androidx.preference.PreferenceManager
@@ -21,6 +25,8 @@ class PavlovApplication : Application() {
      * PavlovApplication.<property>
      */
     companion object {
+        lateinit var instance: PavlovApplication
+
         /** The local database to store the structured data of the app */
         lateinit var local_db: LocalDatabase
             private set
@@ -55,11 +61,14 @@ class PavlovApplication : Application() {
             preferences.edit().putInt(TREATS_KEY, newval).apply()
             _treats.update { newval }
         }
+
     }
 
     override fun onCreate() {
         super.onCreate()
         Log.d("Pavlov App","Application Created.")
+
+        instance = this
 
         local_db = Room.databaseBuilder(
             applicationContext,

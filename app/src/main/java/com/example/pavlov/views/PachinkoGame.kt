@@ -12,16 +12,60 @@ import android.graphics.RectF
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import android.view.VelocityTracker
+import androidx.compose.animation.Animatable
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.calculateTargetValue
+import androidx.compose.animation.splineBasedDecay
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.horizontalDrag
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.withMatrix
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pavlov.R
 import com.example.pavlov.utils.Vec2
 import com.example.pavlov.viewmodels.AnyEvent
 import com.example.pavlov.viewmodels.SharedState
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import org.dyn4j.dynamics.Body
 import org.dyn4j.geometry.Circle
 import org.dyn4j.geometry.Geometry
@@ -29,33 +73,64 @@ import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.World
 import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.absoluteValue
+import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
-enum class PachinkoID {
-    Ball,
-    Peg
+sealed class PachinkoBody : Body()
+{
+    abstract fun render(canvas: Canvas)
 }
 
-class PachinkoBody(
-    val id: PachinkoID,
-    val res: Bitmap? = null,
-) : Body() {
-
-    fun render(canvas: Canvas) {
-        when (id) {
-            PachinkoID.Ball -> {
-                val ballRadius = (fixtures[0].shape as Circle).radius.toFloat()
-                val ballCenter = transform.translation.toVec2()
-                canvas.drawBitmapCentered(res!!, pos = ballCenter, size = Vec2(ballRadius))
-            }
-            PachinkoID.Peg -> {
-                val pegRadius = (fixtures[0].shape as Circle).radius.toFloat()
-                val pegCenter = transform.translation.toVec2()
-                canvas.drawBitmapCentered(res!!, pos = pegCenter, size = Vec2(pegRadius))
-            }
-        }
+class PachinkoBall(
+    val res: Bitmap,
+    val pos: Vector2 = Vector2(.0,.0)
+) : PachinkoBody() {
+    init {
+        val bf = addFixture(Geometry.createCircle(1.0), 10000.0, 0.08, 1.0)
+        bf.restitutionVelocity = 0.001
+        setMass(MassType.NORMAL)
+        translate(pos)
     }
+
+    override fun render(canvas: Canvas) {
+        val ballRadius = (fixtures[0].shape as Circle).radius.toFloat()
+        val ballCenter = transform.translation.toVec2()
+        canvas.drawBitmapCentered(res, pos = ballCenter, size = Vec2(ballRadius))
+    }
+}
+
+class PachinkoPeg(
+    val res: Bitmap,
+    val pos: Vector2 = Vector2(.0,.0)
+) : PachinkoBody() {
+    init {
+        val pf = addFixture(Geometry.createCircle(0.70))
+        pf.restitution = 1.0
+        setMass(MassType.INFINITE)
+        translate(pos)
+    }
+
+    override fun render(canvas: Canvas) {
+        val pegRadius = (fixtures[0].shape as Circle).radius.toFloat()
+        val pegCenter = transform.translation.toVec2()
+        canvas.drawBitmapCentered(res, pos = pegCenter, size = Vec2(pegRadius))
+    }
+}
+
+class DebugMarker(
+    val color: Int = Color.RED
+) : PachinkoBody() {
+    override fun render(canvas: Canvas) {
+        val pos = transform.translation.toVec2()
+        val paint = Paint()
+        paint.color = color
+        canvas.drawCircle(pos.x, pos.y, 50f, paint)
+    }
+
 }
 
 private fun Canvas.drawBitmapCentered(bmp: Bitmap,
@@ -84,8 +159,18 @@ private operator fun Vector2.times(j: Double): Vector2 {
     return Vector2(this.x * j, this.y * j)
 }
 
+private operator fun Vector2.plus(other: Vector2): Vector2 {
+    return this.sum(other)
+}
+
+
+sealed interface PachinkoUiEvent {
+    data class LaunchBall(val power: Float) : PachinkoUiEvent
+}
+
 class PachinkoGameView(
     context: Context,
+    val vm: PachinkoViewModel,
 ) : SurfaceView(context), SurfaceHolder.Callback {
     private val steelBall: Bitmap =
         BitmapFactory.decodeResource(context.resources, R.drawable.steel_ball)
@@ -157,29 +242,75 @@ class PachinkoGameView(
         initializeGameWorld(width, height)
     }
 
-    private fun placePinInWorld(world: World<PachinkoBody>, x: Double, y: Double) {
-        val peggle = PachinkoBody(PachinkoID.Peg, goldenPeg)
-        val pf = peggle.addFixture(Geometry.createCircle(0.70))
-        pf.restitution = 1.0
-        peggle.setMass(MassType.INFINITE)
-        peggle.translate(Vector2(x, y))
-        world.addBody(peggle)
+    /**
+     * Place pins in an arc relative to some anchor point
+     * @param anchorPoint The center of the arc.
+     * @param startTheta The angle in radians where the first peg will be placed.
+     * @param endTheta The end angle in radians where the last peg will be placed.
+     * @param displacement How far from the anchor point to place each peg.
+     * */
+    private fun placePinsInArc(
+        anchorPoint: Vector2,
+        numPins: Int,
+        startTheta: Double,
+        endTheta: Double,
+        displacement: Double,
+    ) {
+        if (numPins == 0) return
+
+        val arcLen = endTheta - startTheta
+        val offset = Vector2(1.0, 0.0)
+        offset.setMagnitude(displacement)
+        offset.rotate(startTheta)
+
+        val numGaps = numPins - 1
+        if (numGaps == 0) {
+            val theta = (arcLen / 2.0)
+            offset.rotate(theta)
+            val newPos = anchorPoint + offset
+            val peg = PachinkoPeg(goldenPeg, newPos)
+            world.addBody(peg)
+        } else {
+            val arcAdvance = arcLen / numGaps.toDouble()
+            for (v in 0..<numPins) {
+                val newPos = anchorPoint + offset
+                val peg = PachinkoPeg(goldenPeg, newPos)
+                world.addBody(peg)
+                offset.rotate(arcAdvance)
+            }
+        }
+
     }
+
 
     private fun initializeGameWorld(width: Int, height: Int) {
         world.gravity.set(Vector2(0.0, -400.0))
 
         for (v in 0..20) {
-            val ball = PachinkoBody(PachinkoID.Ball, steelBall)
-            val bf = ball.addFixture(Geometry.createCircle(1.0), 10000.0, 0.08, 1.0)
-            bf.restitutionVelocity = 0.001
-            ball.setMass(MassType.NORMAL)
-            ball.translate(
+            val ball = PachinkoBall(steelBall,
+            Vector2(
                 Random.nextDouble(-2.0, 2.0),
                 Random.nextDouble(-2.0, 2.0)
             )
+            )
             world.addBody(ball)
         }
+
+//        placePinsInArc(
+//            anchorPoint = Vector2(0.0, -20.0),
+//            numPins = 10,
+//            startTheta = .0,
+//            endTheta = PI,
+//            displacement = 6.0,
+//        )
+
+        placePinsInArc(
+            anchorPoint = Vector2(0.0, -20.0),
+            numPins = 10,
+            startTheta = -PI / 2.0,
+            endTheta = PI / 2.0,
+            displacement = 6.0,
+        )
 
 //        for (v in 0..30) {
 //            placePinInWorld(
@@ -190,17 +321,6 @@ class PachinkoGameView(
 //        }
 
 
-        val anchorPoint = Vector2(.0,-5.0)
-        val displacement = 10.0
-        val numPins = 10
-        for (v in 0.. numPins) {
-            val theta = (PI / numPins.toDouble()) * v.toDouble()
-            val offset = Vector2(-1.0, 0.0)
-            offset.rotate(-theta)
-            offset.setMagnitude(displacement)
-            val newPos = anchorPoint + offset
-            placePinInWorld(world, newPos.x, newPos.y)
-        }
     }
 
     private fun updateTransformationMatrices(size: Size, density: Float) {
@@ -234,17 +354,125 @@ class PachinkoGameView(
 
 }
 
-private operator fun Vector2.plus(other: Vector2): Vector2 {
-    return this.sum(other)
+class PachinkoViewModel : ViewModel() {
+    private val _uiEventChannel = Channel<PachinkoUiEvent>()
+    val uiEventChannel = _uiEventChannel.receiveAsFlow()
+
+    fun sendEvent(event: PachinkoUiEvent) {
+        viewModelScope.launch {
+            _uiEventChannel.send(event)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _uiEventChannel.close()
+    }
 }
 
 @Composable
 fun PachinkoView(sharedState: SharedState, onEvent: (AnyEvent) -> Unit) {
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            PachinkoGameView(context)
+    val vm = viewModel<PachinkoViewModel>()
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                PachinkoGameView(context, vm)
+            },
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .width(120.dp)
+                .height(360.dp)
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+        ) {
+            PachinkoLaunchController(
+                onPullReleased = {
+//                    Log.d("LAUNCH", "Power = $it")
+                    vm.sendEvent(PachinkoUiEvent.LaunchBall(it))
+                }
+            )
         }
-    )
+    }
 }
 
+@Composable
+fun PachinkoLaunchController(
+    onPullReleased: (launchPower: Float) -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val offset = remember {
+        androidx.compose.animation.core.Animatable(
+            0f
+        )
+    }
+    var parentHeightPx by remember { mutableFloatStateOf(0f) }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { size ->
+                parentHeightPx = size.height.toFloat()
+            }
+            .pointerInput(Unit) {
+                val decay = splineBasedDecay<Float>(this)
+                detectVerticalDragGestures(
+                    onDragStart = {},
+                    onVerticalDrag = { change, dragAmount ->
+                        coroutineScope.launch {
+                            offset.snapTo(offset.value + dragAmount)
+                        }
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        val pullFraction = if (parentHeightPx > 0) {
+                            min(1f, offset.value / parentHeightPx)
+                        } else {
+                            0f
+                        }
+                        onPullReleased(pullFraction)
+                        coroutineScope.launch {
+                            offset.animateTo(targetValue = 0f, animationSpec = SpringSpec())
+                        }
+                    },
+                    onDragCancel = {
+                        coroutineScope.launch {
+                            offset.animateTo(targetValue = 0f, animationSpec = SpringSpec())
+                        }
+                    }
+                )
+            }
+    ) {
+        Box(modifier = Modifier
+            .fillMaxWidth(0.2f)
+            .align(Alignment.TopCenter)
+            .height(offset.value.dp / LocalDensity.current.density)
+            .background(MaterialTheme.colorScheme.error)
+        )
+        Box(modifier = Modifier
+            .offset { IntOffset(0, offset.value.roundToInt()) }
+            .fillMaxWidth()
+            .fillMaxHeight(0.1f)
+            .background(MaterialTheme.colorScheme.primary)
+        )
+    }
+}
+
+@Preview @Composable
+fun TestLaunchController() {
+    Box(
+        modifier = Modifier
+            .width(120.dp)
+            .height(360.dp)
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        PachinkoLaunchController(
+            onPullReleased = {
+                Log.d("LAUNCH", "Power = $it")
+            }
+        )
+    }
+}

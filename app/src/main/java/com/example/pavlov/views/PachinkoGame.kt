@@ -9,21 +9,16 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import android.view.VelocityTracker
-import androidx.compose.animation.Animatable
 import androidx.compose.animation.core.SpringSpec
-import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.splineBasedDecay
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,25 +27,19 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -62,19 +51,28 @@ import com.example.pavlov.R
 import com.example.pavlov.utils.Vec2
 import com.example.pavlov.viewmodels.AnyEvent
 import com.example.pavlov.viewmodels.SharedState
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.android.asCoroutineDispatcher
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import org.dyn4j.dynamics.Body
 import org.dyn4j.geometry.Circle
 import org.dyn4j.geometry.Geometry
 import org.dyn4j.geometry.MassType
 import org.dyn4j.geometry.Vector2
 import org.dyn4j.world.World
+import java.lang.Thread.sleep
+import java.util.concurrent.CountDownLatch
 import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.absoluteValue
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -90,7 +88,7 @@ class PachinkoBall(
     val pos: Vector2 = Vector2(.0,.0)
 ) : PachinkoBody() {
     init {
-        val bf = addFixture(Geometry.createCircle(1.0), 10000.0, 0.08, 1.0)
+        val bf = addFixture(Geometry.createCircle(1.0), 8000.0, 0.16, 0.7)
         bf.restitutionVelocity = 0.001
         setMass(MassType.NORMAL)
         translate(pos)
@@ -109,7 +107,7 @@ class PachinkoPeg(
 ) : PachinkoBody() {
     init {
         val pf = addFixture(Geometry.createCircle(0.70))
-        pf.restitution = 1.0
+        pf.restitution = 0.9
         setMass(MassType.INFINITE)
         translate(pos)
     }
@@ -182,34 +180,96 @@ class PachinkoGameView(
     // TODO: Constrain world bounds
     private val world = World<PachinkoBody>()
     private var gameThread: GameThread? = null
+    private var gameCoroutineScope: CoroutineScope? = null
 
-    inner class GameThread(private val holder: SurfaceHolder) : Thread() {
-        var running = true
+    inner class GameThread : Thread() {
+        private var looper: Looper? = null
+        private var handler: Handler? = null
+        // This is basically a thread-safe fence to wait in the gameDispatcher to be initialized
+        private val gameDispatcherReady = CountDownLatch(1)
+        private lateinit var gameDispatcher: CoroutineDispatcher
+
+
         override fun run() {
-            var lastFrameTime = System.nanoTime()
-            while (running) {
-                val currentTime = System.nanoTime()
-                val deltaTimeInSeconds = (currentTime - lastFrameTime) / 1_000_000_000.0
-                update(deltaTimeInSeconds)
-                val canvas = holder.lockCanvas()
-                if (canvas != null) {
-                    canvas.drawColor(Color.BLACK)
-                    render(canvas)
-                    holder.unlockCanvasAndPost(canvas)
-                }
-                lastFrameTime = currentTime
-                try {
-                    sleep(TARGET_FRAME_TIME.inWholeMilliseconds)
-                } catch (e: InterruptedException) {
-                    Log.e("Thread Interrupted", e.toString())
-                }
+            // 1. Prepare the Looper for this thread
+            Looper.prepare()
+            looper = Looper.myLooper()
+            // 2. Create the Handler associated with this Looper
+            handler = Handler(looper!!)
+            // 3. Create the CoroutineDispatcher from the Handler
+            // This dispatcher will post coroutine tasks to the Handler's message queue
+            gameDispatcher = handler!!.asCoroutineDispatcher("GameThreadDispatcher")
+            // Signal that the handler and dispatcher are ready
+            gameDispatcherReady.countDown()
+            // 4. Start the Looper - this makes the thread process messages
+            // The loop() call blocks until Looper.quit() or quitSafely() is called
+            Looper.loop()
+
+            Log.e("GameThread", "GameThread loop finished")
+        }
+
+        fun waitForGameDispatcher(): CoroutineDispatcher {
+            gameDispatcherReady.await()
+            return gameDispatcher
+        }
+
+        fun quitSafely() {
+            handler?.post{
+                looper?.quitSafely()
             }
         }
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
-        gameThread = GameThread(holder)
+        gameThread = GameThread()
         gameThread?.start()
+
+        // FIXME: USE ACTIVITY LIFECYCLE SCOPE!!!!!
+        // NOTE: We need to launch this as a coroutine scope because we have to wait for the
+        // GameThread to prepare the gameDispatcher which is a blocking operation
+        GlobalScope.launch(Dispatchers.IO) {
+            val thread = gameThread ?: return@launch
+
+            val gameDispatcher = thread.waitForGameDispatcher()
+
+            val gameJob = SupervisorJob()
+            gameCoroutineScope = CoroutineScope(gameDispatcher + gameJob)
+
+            // Event Collector Coroutine
+            gameCoroutineScope?.launch {
+                vm.uiEventChannel.collect {
+                    handleUiEvent(it)
+                }
+            }
+            // Main Game Loop Coroutine
+            gameCoroutineScope?.launch {
+                var lastFrameTime = System.nanoTime()
+                while (isActive) {
+                    val currentTime = System.nanoTime()
+                    val deltaTimeInSeconds = (currentTime - lastFrameTime) / 1_000_000_000.0
+                    update(deltaTimeInSeconds)
+                    val canvas = holder.lockCanvas()
+                    if (canvas != null) {
+                        canvas.drawColor(Color.BLACK)
+                        render(canvas)
+                        holder.unlockCanvasAndPost(canvas)
+                    }
+                    lastFrameTime = currentTime
+                    delay(TARGET_FRAME_TIME)
+                }
+            }
+        }
+    }
+
+    private fun handleUiEvent(event: PachinkoUiEvent) {
+        when(event) {
+            is PachinkoUiEvent.LaunchBall -> {
+                val b = PachinkoBall(steelBall)
+                val launchPower = 50000.0
+                b.setLinearVelocity(.0, launchPower * event.power)
+                world.addBody(b)
+            }
+        }
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
@@ -218,6 +278,10 @@ class PachinkoGameView(
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
+        gameCoroutineScope?.cancel()
+        gameCoroutineScope = null
+
+        gameThread?.quitSafely()
         var retry = true
         while (retry) {
             try {
@@ -227,15 +291,9 @@ class PachinkoGameView(
                 // Retry
             }
         }
+        gameThread = null
     }
 
-    fun pauseGame() {
-        gameThread?.running = false
-    }
-
-    fun resumeGame() {
-        gameThread?.running = true
-    }
 
     init {
         holder.addCallback(this)
@@ -306,10 +364,10 @@ class PachinkoGameView(
 
         placePinsInArc(
             anchorPoint = Vector2(0.0, -20.0),
-            numPins = 10,
-            startTheta = -PI / 2.0,
-            endTheta = PI / 2.0,
-            displacement = 6.0,
+            numPins = 30,
+            startTheta = .0,
+            endTheta = -PI,
+            displacement = 16.0,
         )
 
 //        for (v in 0..30) {

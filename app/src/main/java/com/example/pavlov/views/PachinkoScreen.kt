@@ -90,17 +90,20 @@ fun PachinkoLaunchController(
                     onDragStart = {},
                     onVerticalDrag = { change, dragAmount ->
                         coroutineScope.launch {
-                            offset.snapTo(offset.value + dragAmount)
+                            val targetOffset = (offset.value + dragAmount)
+                                .coerceIn(0f, parentHeightPx * 0.9f)
+                            offset.snapTo(targetOffset)
                         }
                         change.consume()
                     },
                     onDragEnd = {
                         val pullFraction = if (parentHeightPx > 0) {
-                            min(1f, offset.value / parentHeightPx)
+                            min(1f, offset.value / (parentHeightPx * 0.9f))
                         } else {
                             0f
                         }
                         onPullReleased(pullFraction)
+                        Log.d("FRAC", "PullFrac = $pullFraction")
                         coroutineScope.launch {
                             offset.animateTo(targetValue = 0f, animationSpec = SpringSpec())
                         }

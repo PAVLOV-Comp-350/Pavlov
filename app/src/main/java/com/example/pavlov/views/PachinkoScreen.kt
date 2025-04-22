@@ -2,7 +2,6 @@ package com.example.pavlov.views
 
 import android.util.Log
 import androidx.compose.animation.core.SpringSpec
-import androidx.compose.animation.splineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pavlov.viewmodels.AnyEvent
@@ -53,6 +55,14 @@ fun PachinkoView(sharedState: SharedState, onEvent: (AnyEvent) -> Unit) {
                 PachinkoGameView(context, vm)
             },
         )
+        Button(
+            onClick = {vm.sendEvent(PachinkoUiEvent.RegenerateGameBoard)},
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp)
+        ) {
+            Text(text = "Re-Generate", fontSize = 4.em)
+        }
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)

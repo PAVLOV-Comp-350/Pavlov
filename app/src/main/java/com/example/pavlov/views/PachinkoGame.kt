@@ -14,6 +14,7 @@ import android.os.Looper
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.annotation.FloatRange
 import androidx.compose.ui.geometry.Size
 import androidx.core.graphics.withMatrix
 import androidx.lifecycle.LifecycleCoroutineScope
@@ -54,7 +55,7 @@ class PachinkoGameView(
     private var canvasToWorld = Matrix()
 
     // TODO: Constrain world bounds
-    private val world = World<PachinkoBody>()
+    private var world = World<PachinkoBody>()
     private var gameThread: GameThread? = null
     private var gameCoroutineScope: CoroutineScope? = null
     private var lifecycleScope: LifecycleCoroutineScope? = null
@@ -155,6 +156,12 @@ class PachinkoGameView(
                 b.setLinearVelocity(.0, launchPower * event.power)
                 world.addBody(b)
             }
+
+            PachinkoUiEvent.RegenerateGameBoard -> {
+                // Reset the world
+                world = World<PachinkoBody>()
+                initializeGameWorld(width, height)
+            }
         }
     }
 
@@ -224,14 +231,25 @@ class PachinkoGameView(
     private fun initializeGameWorld(width: Int, height: Int) {
         world.gravity.set(Vector2(0.0, -400.0))
 
-        for (v in 0..20) {
-            val ball = PachinkoBall(steelBall,
-            Vector2(
-                Random.nextDouble(-2.0, 2.0),
-                Random.nextDouble(-2.0, 2.0)
-            )
-            )
-            world.addBody(ball)
+
+        // Generate random heights for root points
+        var rootPoints = mutableListOf<Vector2>()
+        val numRootPoints = Random.nextInt(6, 10)
+        val climbMin = 6.5
+        val climbMax = 8.5
+        val spreadMin = 6.82
+        val spreadMax = 16.0
+        val startHeight = -40.0
+        var spawnHeight = startHeight + Random.nextDouble(climbMin, climbMax)
+        for (v in 0..<numRootPoints) {
+            val offset = Random.nextDouble(spreadMin, spreadMax)
+            rootPoints += Vector2(offset, spawnHeight)
+            rootPoints += Vector2(-offset, spawnHeight)
+            spawnHeight += Random.nextDouble(climbMin, climbMax)
+        }
+
+        for(p in rootPoints) {
+            world.addBody(DebugMarker(p))
         }
 
 //        placePinsInArc(
@@ -334,13 +352,19 @@ class PachinkoPeg(
 }
 
 class DebugMarker(
-    val color: Int = Color.RED
+    pos: Vector2,
+    val color: Int = Color.RED,
+    private val debugRadius: Float = 0.8f,
 ) : PachinkoBody() {
+    init {
+        translate(pos)
+    }
+
     override fun render(canvas: Canvas) {
         val pos = transform.translation.toVec2()
         val paint = Paint()
         paint.color = color
-        canvas.drawCircle(pos.x, pos.y, 50f, paint)
+        canvas.drawCircle(pos.x, pos.y, debugRadius, paint)
     }
 
 }

@@ -1,5 +1,6 @@
 package com.example.pavlov.views
 
+import android.media.MediaPlayer
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,10 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pavlov.R
 import com.example.pavlov.models.RouletteGameState
+import com.example.pavlov.models.SoundManager
 import com.example.pavlov.theme.CasinoTheme
 import com.example.pavlov.viewmodels.RouletteEvent
 import com.example.pavlov.viewmodels.ScratcherEvent
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 
 /**
@@ -86,11 +90,17 @@ fun RouletteGame(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 
+            val context = LocalContext.current
+
+            LaunchedEffect(Unit) {
+                SoundManager.init(context)
+            }
 
             TextButton(
                 onClick = {
                     if (gameState.pick.isNotBlank()) {
                         onEvent(RouletteEvent.Spin)
+                        SoundManager.playRouletteSound()
                     }
                 },
                 enabled = !gameState.isSpinning && gameState.pick.isNotBlank()
@@ -231,7 +241,7 @@ fun RouletteBettingBoard(
                     rotation.animateTo(
                         targetValue = rotation.value + 1440f,  // Rotate 360 degrees
                         animationSpec = tween(
-                            durationMillis = 3000,
+                            durationMillis = 4000,
                             easing = FastOutSlowInEasing
                         )
                     )

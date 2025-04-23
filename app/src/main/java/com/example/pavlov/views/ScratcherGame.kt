@@ -53,7 +53,6 @@ fun ScratcherGame(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Game title
             Text(
                 text = "Scratcher",
                 style = MaterialTheme.typography.headlineMedium,
@@ -61,25 +60,21 @@ fun ScratcherGame(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Game instructions
             Text(
                 text = "Scratch to reveal prizes!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Scratcher grid
             ScratcherGrid(
                 cells = gameState.cells,
                 onScratch = { index -> onEvent(ScratcherEvent.ScratchCell(index)) },
                 modifier = Modifier.padding(vertical = 16.dp)
             )
 
-            // Results section
             if (gameState.isComplete) {
                 ScratcherResults(
                     totalPrize = gameState.totalPrize,
-                    onCollect = { onEvent(ScratcherEvent.CollectPrize) }
                 )
             } else {
                 Text(
@@ -90,13 +85,36 @@ fun ScratcherGame(
                 )
             }
 
-            // Close button
             TextButton(
                 onClick = { onEvent(ScratcherEvent.CloseGame) }
             ) {
                 Text("Close Game")
             }
         }
+    }
+    val showWinNotification = gameState.isComplete && gameState.totalPrize > 0
+    val showLoseNotification = gameState.isComplete && gameState.totalPrize == 0
+
+    if (showWinNotification) {
+        WinNotification(
+            prizeAmount = gameState.totalPrize,
+            onComplete = {
+                onEvent(ScratcherEvent.CloseGame)
+            }
+        )
+    }
+
+    if (showLoseNotification) {
+        LoseNotification(
+            gameName = "Scratcher",
+            playCost = 5,
+            onTryAgain = {
+                onEvent(ScratcherEvent.RestartGame)
+            },
+            onClose = {
+                onEvent(ScratcherEvent.CloseGame)
+            }
+        )
     }
 }
 
@@ -147,9 +165,16 @@ fun ScratcherCell(
     val scratchPaths = remember { mutableStateListOf<Path>() }
     var scratchProgress by remember { mutableFloatStateOf(0f) }
     val scratchThreshold = 0.6f
-    var isRevealed by remember { mutableStateOf(cell.isRevealed) }
+    var isRevealed by remember(cell.id) { mutableStateOf(cell.isRevealed) }
 
-    // Mark as revealed once enough is scratched
+    LaunchedEffect(cell.isRevealed) {
+        isRevealed = cell.isRevealed
+        if (!cell.isRevealed) {
+            scratchPaths.clear()
+            scratchProgress = 0f
+        }
+    }
+
     LaunchedEffect(scratchProgress) {
         if (scratchProgress >= scratchThreshold && !isRevealed) {
             isRevealed = true
@@ -163,7 +188,6 @@ fun ScratcherCell(
             .clip(RectangleShape),
         contentAlignment = Alignment.Center
     ) {
-        // Prize background with reward value
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -230,7 +254,6 @@ fun ScratcherCell(
                 }
         ) {
             if (!isRevealed) {
-                // Draw silver scratch layer
                 drawRect(
                     brush = Brush.linearGradient(CasinoTheme.SilverGradient)
                 )
@@ -256,7 +279,6 @@ fun ScratcherCell(
                     )
                 }
 
-                // erase parts to show prize underneath
                 scratchPaths.forEach { path ->
                     drawPath(
                         path = path,
@@ -273,7 +295,6 @@ fun ScratcherCell(
         @Composable
         fun ScratcherResults(
             totalPrize: Int,
-            onCollect: () -> Unit
         ) {
             AnimatedVisibility(
                 visible = true,
@@ -309,18 +330,6 @@ fun ScratcherCell(
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(24.dp)
                             )
-                        }
-                    }
-
-                    if (totalPrize > 0) {
-                        Button(
-                            onClick = onCollect,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = CasinoTheme.PlayButtonColor
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        ) {
-                            Text("Collect Prize")
                         }
                     }
                 }

@@ -1,16 +1,27 @@
 package com.example.pavlov.views
 
+import android.media.MediaPlayer
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,16 +34,20 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.pavlov.R
 import com.example.pavlov.models.RouletteGameState
+import com.example.pavlov.models.SoundManager
 import com.example.pavlov.theme.CasinoTheme
 import com.example.pavlov.viewmodels.RouletteEvent
 import com.example.pavlov.viewmodels.ScratcherEvent
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 
 /**
@@ -50,10 +65,11 @@ fun RouletteGame(
             .fillMaxWidth()
             .padding(16.dp),
         contentAlignment = Alignment.Center
-    ){
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             // Game title
             Text(
@@ -63,27 +79,73 @@ fun RouletteGame(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-
             Text(
                 text = "Select your Pick, then Spin to Win!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            SpinningWheel(
+                isSpinning = gameState.isSpinning,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+
+            val context = LocalContext.current
+
+            LaunchedEffect(Unit) {
+                SoundManager.init(context)
+            }
+
             TextButton(
-                onClick = { onEvent(RouletteEvent.Spin) }
+                onClick = {
+                    if (gameState.pick.isNotBlank()) {
+                        onEvent(RouletteEvent.Spin)
+                        SoundManager.playRouletteSound()
+                    }
+                },
+                enabled = !gameState.isSpinning && gameState.pick.isNotBlank()
             ) {
                 Text("Spin")
             }
-            //fill game stuff here
 
             RouletteBettingBoard(
+                selectedIndex = gameState.pickIndex,
                 onEvent = { pickEvent ->
                     onEvent(pickEvent)
                 },
                 modifier = Modifier
             )
 
+
+            if (gameState.resultMessage.isNotBlank() && !gameState.isSpinning) {
+                val winningNumberStr = if (gameState.win.isNotBlank()) {
+                    "Winning Number: ${gameState.win}"
+                } else {
+                    val parts = gameState.resultMessage.split("")
+                    val winIndex = parts.indexOf("Number:")
+                    if (winIndex >= 0 && winIndex + 1 < parts.size) {
+                        "Winning Number: ${parts[winIndex + 1]}"
+                    } else {
+                        ""
+                    }
+                }
+                if (winningNumberStr.isNotBlank()) {
+                    Text(
+                        text = winningNumberStr,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+            if (gameState.pick.isBlank() && !gameState.isSpinning) {
+                Text(
+                    text = "Please select a number first",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
             TextButton(
                 onClick = { onEvent(RouletteEvent.CloseGame) }
             ) {
@@ -91,10 +153,37 @@ fun RouletteGame(
             }
         }
     }
-}
 
+    val showWinNotification =
+        gameState.totalPrize > 0 && !gameState.isSpinning && gameState.resultMessage.isNotBlank()
+    val showLoseNotification =
+        gameState.totalPrize == 0 && !gameState.isSpinning && gameState.resultMessage.isNotBlank()
+
+    if (showWinNotification) {
+        WinNotification(
+            prizeAmount = gameState.totalPrize,
+            onComplete = {
+                onEvent(RouletteEvent.CloseGame)
+            }
+        )
+    }
+
+    if (showLoseNotification) {
+        LoseNotification(
+            gameName = "Roulette",
+            playCost = 8,
+            onTryAgain = {
+                onEvent(RouletteEvent.RestartGame)
+            },
+            onClose = {
+                onEvent(RouletteEvent.CloseGame)
+            }
+        )
+    }
+}
 @Composable
 fun RouletteBettingBoard(
+    selectedIndex: Int,
     onEvent: (RouletteEvent.SelectPick) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -102,29 +191,76 @@ fun RouletteBettingBoard(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement =  Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         roulettePicks.chunked(6).forEach { rowItems ->
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
-            ){
+            ) {
                 rowItems.forEach { label ->
                     val index = roulettePicks.indexOf(label)
+                    val isSelected = index == selectedIndex
                     TextButton(
-                        onClick = { onEvent(RouletteEvent.SelectPick(index))},
+                        onClick = { onEvent(RouletteEvent.SelectPick(index)) },
                         modifier = Modifier
                             .clip(MaterialTheme.shapes.small)
                             .background(
                                 brush = Brush.linearGradient(
-                                    colors = CasinoTheme.EmeraldGradient
+                                    colors = if (isSelected) {
+                                        CasinoTheme.EmeraldGradient.map { it.copy(alpha = 0.5f) }
+                                    } else {
+                                        CasinoTheme.EmeraldGradient
+                                    }
                                 )
                             )
                     ) {
-                        Text(label)
+                        Text(
+                            label,
+                            color = if (isSelected) Color.Black else Color.White
+                        )
                     }
                 }
             }
         }
     }
 }
+
+
+        @Composable
+        fun SpinningWheel(
+            isSpinning: Boolean,
+            modifier: Modifier = Modifier
+        ) {
+            val rotation = remember { Animatable(0f) }
+
+            // Launch the animation if the wheel is spinning
+            LaunchedEffect(isSpinning) {
+                if (isSpinning) {
+                    // Animate rotation over 3 seconds
+                    rotation.animateTo(
+                        targetValue = rotation.value + 1440f,  // Rotate 360 degrees
+                        animationSpec = tween(
+                            durationMillis = 4000,
+                            easing = FastOutSlowInEasing
+                        )
+                    )
+                }
+            }
+
+            // Apply the rotation to the wheel's modifier
+            Box(
+                modifier = modifier
+                    .size(160.dp)
+                    .graphicsLayer(
+                        rotationZ = rotation.value // Apply rotation to the wheel
+                    )
+            ) {
+                // Add your roulette wheel image or shape here
+                Image(
+                    painter = painterResource(id = R.drawable.roulette_wheel), // Use a wheel image
+                    contentDescription = "Roulette Wheel",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }

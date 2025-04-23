@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import kotlin.random.Random
 
 class GoalsViewModel(
@@ -31,21 +32,26 @@ class GoalsViewModel(
     private val _state = MutableStateFlow(GoalsState())
     private val _activitiesCompletedToday = activityDao.getAllActivitiesCompletedToday()
     private val _allGoals = goalDao.getAllGoals()
+
     // State flow to filter only goals that are active today and have not been marked off on the activity log today
     private val _pendingGoals = combine(_activitiesCompletedToday, _allGoals) { activities, goals ->
         val today = PavlovDayOfWeek.today()
         goals.filter { goalIsPendingCompletion(it, activities, today) }
     }
-    private val _completedGoals = combine(_activitiesCompletedToday, _allGoals) { activities, goals ->
-        val today = PavlovDayOfWeek.today()
-        goals.filter { !goalIsPendingCompletion(it, activities, today) }
-    }
-    private fun goalIsPendingCompletion(goal: Goal,
-                                        activities: List<Activity>,
-                                        today: PavlovDayOfWeek): Boolean {
+    private val _completedGoals =
+        combine(_activitiesCompletedToday, _allGoals) { activities, goals ->
+            val today = PavlovDayOfWeek.today()
+            goals.filter { !goalIsPendingCompletion(it, activities, today) }
+        }
+
+    private fun goalIsPendingCompletion(
+        goal: Goal,
+        activities: List<Activity>,
+        today: PavlovDayOfWeek
+    ): Boolean {
         if (!goal.activeDays.isDayActive(today)) return false;
         for (a in activities) {
-            if(a.goalId == goal.id) { // The goal was already completed today
+            if (a.goalId == goal.id) { // The goal was already completed today
                 return false;
             }
         }
@@ -54,16 +60,17 @@ class GoalsViewModel(
 
     // Consumers of the GoalViewModel API subscribe to this StateFlow
     // to receive update to the UI state
-    val state = combine(_state, _pendingGoals, _completedGoals) { state, pending, completed -> Unit
-            state.copy(
-                pendingGoals = pending,
-                completedGoals = completed
-            )
-        }
+    val state = combine(_state, _pendingGoals, _completedGoals) { state, pending, completed ->
+        Unit
+        state.copy(
+            pendingGoals = pending,
+            completedGoals = completed
+        )
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GoalsState())
 
     fun onEvent(event: GoalsEvent) {
-        when(event) {
+        when (event) {
             GoalsEvent.ShowAddGoalAlert -> {
                 _state.value = _state.value.copy(
                     showPopup = true,
@@ -120,6 +127,7 @@ class GoalsViewModel(
                     showPopup = false
                 )
             }
+
             is GoalsEvent.ShowEditGoalAlert -> {
                 val goalToEdit = findGoal { it.id == event.goalId }
                 goalToEdit?.let {
@@ -145,17 +153,46 @@ class GoalsViewModel(
             is GoalsEvent.MarkGoalComplete -> {
 
                 viewModelScope.launch {
-                    activityDao.insertActivity(Activity(
-                    goalId = event.goalId,
-                    completionTimestamp = LocalDateTime.now()
-                    ))
-                    _state.update { current ->
-                        current.copy(
-                            xp = current.xp + 10  // You can change the value to any reward logic
+                    val goal = findGoal { it.id == event.goalId }
+                    if (goal != null) {
+                        val now = LocalDateTime.now()
+
+                        val newStreak = calculateNewStreak(goal, now)
+
+                        val bestStreak = if (goal.bestStreak > 0) {
+                            maxOf(goal.bestStreak, newStreak)
+                        } else {
+                            newStreak
+                        }
+
+                        val streakBonus = calculateStreakBonus(newStreak)
+
+                        activityDao.insertActivity(
+                            Activity(
+                                goalId = event.goalId,
+                                completionTimestamp = now
+                            )
                         )
+                        goalDao.addOrUpdateGoal(
+                            goal.copy(
+                                streak = newStreak,
+                                bestStreak = bestStreak,
+                                lastCompletionDate = now,
+                                totalCompletions = goal.totalCompletions + 1
+                            )
+                        )
+
+                        PavlovApplication.addTreats(10 + streakBonus)
+
+                        _state.update { current ->
+                            current.copy(
+                                xp = current.xp + 10 + streakBonus // You can change the base value as needed
+                            )
+                        }
                     }
                 }
             }
+
 
             GoalsEvent.ShowTimePicker -> {
                 _state.update {
@@ -181,6 +218,20 @@ class GoalsViewModel(
                     )
                 }
             }
+
+            is GoalsEvent.ExpandGoalItem -> {
+                _state.update { current ->
+                    val mut = current.expandedGoals.toMutableSet()
+                    if (current.expandedGoals.contains(event.goalId)) {
+                        mut.remove(event.goalId)
+                    } else {
+                        mut.add(event.goalId)
+                    }
+                    current.copy(
+                        expandedGoals = mut,
+                    )
+                }
+            }
         }
     }
 
@@ -189,7 +240,34 @@ class GoalsViewModel(
         return state.value.pendingGoals.find(predicate) ?:
             state.value.completedGoals.find(predicate)
     }
+    private fun calculateNewStreak(goal: Goal, completionTime: LocalDateTime): Int {
+        if (goal.lastCompletionDate == null) {
+            return 1
+        }
 
+        val lastCompletion = goal.lastCompletionDate
+        val daysBetween = ChronoUnit.DAYS.between(
+            lastCompletion.toLocalDate(),
+            completionTime.toLocalDate()
+        )
 
-
+        return when {
+            daysBetween == 0L -> goal.streak
+            daysBetween == 1L -> goal.streak + 1
+            else -> 1
+        }
+    }
+    /**
+     * Calculate bonus rewards based on the current streak length
+     * Returns a multiplier value that increases with longer streaks
+     */
+    private fun calculateStreakBonus(streak: Int): Int {
+        return when {
+            streak >= 90 -> 25
+            streak >= 30 -> 15
+            streak >= 7 -> 8
+            streak >= 3 -> 3
+            else -> 1
+        }
+    }
 }

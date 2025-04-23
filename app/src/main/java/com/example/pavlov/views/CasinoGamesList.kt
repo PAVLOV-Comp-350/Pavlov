@@ -42,7 +42,7 @@ fun getCasinoGames() = remember {
             costInTreats = 15,
         ),
         CasinoGame(
-            name = "Cards",
+            name = "Poker",
             iconResId = R.drawable.card_icon,
             gradient = CasinoTheme.BronzeGradient,
             costInTreats = 12,

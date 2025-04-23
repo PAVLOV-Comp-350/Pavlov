@@ -16,6 +16,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
+//import com.example.pavlov.utils.getRank
+import com.example.pavlov.utils.getCurrentRankStartXp
+import com.example.pavlov.utils.getNextRankXP
+
 
 class SharedViewModel: ViewModel() {
     // The internal state of the view model is private so that the UI can only
@@ -23,12 +27,14 @@ class SharedViewModel: ViewModel() {
     private val _state = MutableStateFlow(SharedState())
     // Consumers of the GoalViewModel API subscribe to this StateFlow
     // to receive update to the UI state
-    val state = combine(_state, PavlovApplication.treats) { state, treats ->
-        Unit
-        state.copy(
-            treats = treats
+    val state = combine(_state, PavlovApplication.treats, PavlovApplication.xp, PavlovApplication.maxXp) { shared, treats, xp, maxXp ->
+        shared.copy(
+            treats = treats,
+            currentXp = xp,
+            maxXp = maxXp
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SharedState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
+
 
     fun onEvent(event: SharedEvent) {
         when(event) {
@@ -107,19 +113,14 @@ class SharedViewModel: ViewModel() {
     }
 
     fun gainXpFromTask() {
-        _state.update { current ->
-            val newTotalXp = current.currentXp + 20 // or however much XP per goal
+        val newXp = PavlovApplication.xp.value + 50
+        val nextMaxXp = getNextRankXP(newXp)
 
-            if (newTotalXp >= current.maxXp) {
-                current.copy(
-                    currentXp = newTotalXp - current.maxXp,
-                    maxXp = current.maxXp + 25 // Optional level-up scaling
-                )
-            } else {
-                current.copy(
-                    currentXp = newTotalXp
-                )
-            }
+        PavlovApplication.setXp(newXp)
+        PavlovApplication.setMaxXp(nextMaxXp)
+
+        _state.update {
+            it.copy(currentXp = newXp, maxXp = nextMaxXp)
         }
     }
 }

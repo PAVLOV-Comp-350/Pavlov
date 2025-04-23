@@ -41,6 +41,7 @@ import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedViewModel
 import kotlinx.serialization.Serializable
 
+
 @Serializable object MainRoute
 
 sealed interface Screen {
@@ -164,7 +165,7 @@ fun PavlovNavbar(
 ) {
     val items = listOf(
         BottomNavigationItem(
-            title = "Home",
+            title = "Goals",
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home,
             hasNews = false,

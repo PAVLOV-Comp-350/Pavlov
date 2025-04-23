@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.pavlov.PavlovApplication
 import com.example.pavlov.models.CardGameState
+import com.example.pavlov.models.PokerHand
 import com.example.pavlov.models.RouletteGameState
 import com.example.pavlov.models.ScratcherCell
 import com.example.pavlov.models.ScratcherGameState
@@ -49,7 +50,7 @@ class CasinoViewModel: ViewModel() {
                 when (event.game.name) {
                     "Scratcher" -> initScratcherGame()
                     "Roulette" -> initRouletteGame()
-                    "Cards" -> initCardGame()
+                    "Poker" -> initCardGame()
                     "Slots" -> initSlotsGame()
                     else -> {}
                 }
@@ -80,11 +81,113 @@ class CasinoViewModel: ViewModel() {
     private fun initCardGame() {
         _state.update {
             it.copy(
-                cardGameState = CardGameState(
-
-                )
+                cardGameState = CardGameState()
             )
         }
+    }
+
+    private fun dealOneCard(){
+        _state.value.cardGameState?.let { gameState ->
+            if (gameState.deck.isNotEmpty()) {
+                //pick a random card from deck
+                val randomIndex = (gameState.deck.indices).random()
+                val selectedCard = gameState.deck[randomIndex]
+
+                //remove card from deck
+                val newDeck = gameState.deck.toMutableList()
+                newDeck.removeAt(randomIndex)
+
+                //add card to hand
+                val newHand = gameState.hand + selectedCard
+
+                _state.update {
+                    it.copy(
+                        cardGameState = gameState.copy(
+                            deck = newDeck,
+                            hand = newHand
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private fun redrawCards() {
+        _state.value.cardGameState?.let { gameState ->
+            val held = gameState.heldCards.toSet()
+            val originalDeck = gameState.deck.toMutableList()
+            val keptCards = gameState.hand.filter { it in held }.toMutableList()
+
+            viewModelScope.launch {
+                val neededCards = 5 - keptCards.size
+
+                repeat(neededCards) {
+                    if (originalDeck.isEmpty()) return@launch
+
+                    delay(500)
+                    val newCard = originalDeck.random()
+                    originalDeck.remove(newCard)
+                    keptCards.add(newCard)
+
+                    _state.update { currentState ->
+                        currentState.cardGameState?.let { latestState ->
+                            currentState.copy(
+                                cardGameState = latestState.copy(
+                                    hand = keptCards.toList(),
+                                    deck = originalDeck,
+                                    hasRedrawn = true
+                                )
+                            )
+                        } ?: currentState
+                    }
+                }
+
+                delay(1000)
+                handleCardEvent(CardEvent.CheckHand)
+                handleCardEvent(CardEvent.CollectPrize)
+            }
+        }
+    }
+
+    private fun evaluateHand(hand: List<String>): PokerHand {
+        val ranks = hand.map { it.dropLast(1) }
+        val suits = hand.map { it.last() }
+
+        val rankValues = ranks.map { rankToValue(it) }.sorted()
+        val rankCounts = rankValues.groupingBy { it }.eachCount()
+        val isFlush = suits.toSet().size == 1
+        val isStraight = rankValues.zipWithNext().all { (a, b) -> b == a + 1 } ||
+                rankValues == listOf(2, 3, 4, 5, 14) // Ace-low straight
+
+        return when {
+            isFlush && rankValues == listOf(10, 11, 12, 13, 14) -> PokerHand.ROYAL_FLUSH
+            isFlush && isStraight -> PokerHand.STRAIGHT_FLUSH
+            rankCounts.containsValue(4) -> PokerHand.FOUR_OF_A_KIND
+            rankCounts.containsValue(3) && rankCounts.containsValue(2) -> PokerHand.FULL_HOUSE
+            isFlush -> PokerHand.FLUSH
+            isStraight -> PokerHand.STRAIGHT
+            rankCounts.containsValue(3) -> PokerHand.THREE_OF_A_KIND
+            rankCounts.filterValues { it == 2 }.size == 2 -> PokerHand.TWO_PAIR
+            rankCounts.filterValues { it == 2 }.keys.any { it >= 11} -> PokerHand.ONE_PAIR
+            else -> PokerHand.HIGH_CARD
+        }
+    }
+
+    private fun rankToValue(rank: String): Int = when(rank) {
+        "A" -> 14
+        "K" -> 13
+        "Q" -> 12
+        "J" -> 11
+        "10" -> 10
+        "9" -> 9
+        "8" -> 8
+        "7" -> 7
+        "6" -> 6
+        "5" -> 5
+        "4" -> 4
+        "3" -> 3
+        "2" -> 2
+        else -> 0
     }
 
     private fun handleCardEvent(event: CardEvent) {
@@ -93,17 +196,100 @@ class CasinoViewModel: ViewModel() {
                 initCardGame()
             }
 
+            is CardEvent.RestartGame -> {
+                _state.value.cardGameState?.let { gameState ->
+                    if (PavlovApplication.treats.value < 12) {
+                        return
+                    }
+
+                    PavlovApplication.removeTreats(12)
+
+                    _state.update {
+                        it.copy(cardGameState = CardGameState())
+                    }
+                }
+            }
+
+            is CardEvent.DealFromDeck -> {
+                viewModelScope.launch {
+                    repeat(5){
+                        dealOneCard()
+                        delay(500)
+                    }
+                }
+            }
+
+            is CardEvent.Redraw -> {
+                redrawCards()
+            }
+
+            is CardEvent.HoldCard -> {
+                _state.value.cardGameState?.let { gameState ->
+                    val newHeldCards = if (gameState.heldCards.contains(event.card)) {
+                        gameState.heldCards - event.card
+                    } else {
+                        gameState.heldCards + event.card
+                    }
+
+
+                    _state.update {
+                        it.copy(
+                            cardGameState = gameState.copy(
+                                heldCards = newHeldCards
+                            )
+                        )
+                    }
+                }
+            }
+
+            is CardEvent.CheckHand -> {
+                _state.value.cardGameState?.let { gameState ->
+                    val result = evaluateHand(gameState.hand)
+                    val prize = when (result) {
+                        PokerHand.ROYAL_FLUSH -> 1000
+                        PokerHand.STRAIGHT_FLUSH -> 500
+                        PokerHand.FOUR_OF_A_KIND -> 250
+                        PokerHand.FULL_HOUSE -> 100
+                        PokerHand.FLUSH -> 75
+                        PokerHand.STRAIGHT -> 50
+                        PokerHand.THREE_OF_A_KIND -> 25
+                        PokerHand.TWO_PAIR -> 10
+                        PokerHand.ONE_PAIR -> 5
+                        PokerHand.HIGH_CARD -> 0
+                    }
+
+                    _state.update {
+                        it.copy(
+                            cardGameState = gameState.copy (
+                                totalPrize = prize
+                                )
+                        )
+                    }
+                }
+            }
+
             is CardEvent.CollectPrize -> {
                 _state.value.cardGameState?.let { gameState ->
                     if (gameState.totalPrize > 0) {
                         PavlovApplication.addTreats(gameState.totalPrize)
                         _state.update {
                             it.copy(
-                                cardGameState = null,
-                                selectedGame = null
+                                cardGameState = gameState.copy(
+                                    resultMessage = "You win!"
+                                )
                             )
                         }
                     }
+
+                    _state.update {
+                        it.copy(
+                            cardGameState = gameState.copy(
+                                resultMessage =  "You Lose."
+                            )
+                        )
+                    }
+
+
                 }
             }
 
@@ -167,7 +353,7 @@ class CasinoViewModel: ViewModel() {
                         }
 
                         viewModelScope.launch {
-                            delay(3000L) // Wait 3 seconds
+                            delay(4000L) // Wait 4 seconds(sound clip is also 4 seconds)
 
                             val randomWin = rouletteGetRandomWin()
 

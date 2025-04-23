@@ -124,7 +124,7 @@ fun CasinoScreen(
                         }
                     }
 
-                game.name == "Cards" && state.cardGameState !=null -> {
+                game.name == "Poker" && state.cardGameState !=null -> {
                     Dialog(
                         onDismissRequest = { onEvent(CasinoEvent.CloseGameDialog) },
                         properties = DialogProperties(

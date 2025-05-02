@@ -5,9 +5,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -35,6 +37,8 @@ import com.example.pavlov.viewmodels.CasinoEvent
 import com.example.pavlov.viewmodels.CasinoViewModel
 import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsViewModel
+import com.example.pavlov.viewmodels.PetEvent
+import com.example.pavlov.viewmodels.PetViewModel
 import com.example.pavlov.viewmodels.SettingsEvent
 import com.example.pavlov.viewmodels.SettingsViewModel
 import com.example.pavlov.viewmodels.SharedEvent
@@ -51,6 +55,8 @@ sealed interface Screen {
     data object Settings : Screen
     @Serializable
     data object Casino : Screen
+    @Serializable
+    data object Pet : Screen
 }
 
 
@@ -144,6 +150,28 @@ fun PavlovNavHost(
                 )
 
             }
+
+            composable<Screen.Pet> {
+                val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
+
+                val petViewModel = viewModel(PetViewModel::class)
+                val petState by petViewModel.state.collectAsState()
+                PetScreen(
+                    state = petState,
+                    sharedState = sharedState,
+                    onEvent = {
+                        when(it) {
+                            is PetEvent -> petViewModel.onEvent(it)
+                            is SharedEvent -> sharedViewModel.onEvent(it)
+                            else -> Log.e("PET", "Received an unsupported event: $it")
+                        }},
+                    onNavigate = {
+                        navController.navigate(it)
+                        sharedViewModel.onEvent(SharedEvent.SetScreen(it))
+                    }
+                )
+
+            }
         }
     }
 }
@@ -177,6 +205,13 @@ fun PavlovNavbar(
             unselectedIcon = Icons.Outlined.AddCircle,
             hasNews = false,
             screenId = Screen.Casino
+        ),
+        BottomNavigationItem(
+            title = "Pet",
+            selectedIcon = Icons.Filled.Star,
+            unselectedIcon = Icons.Outlined.Star,
+            hasNews = false,
+            screenId = Screen.Pet,
         ),
         BottomNavigationItem(
             title = "Settings",

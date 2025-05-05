@@ -1,5 +1,6 @@
 package com.example.pavlov.viewmodels
 
-interface PetEvent : AnyEvent {
-
+sealed interface PetEvent : AnyEvent {
+    data class purchaseAccessory(val accessory: PetAccessory) : PetEvent
+    data class equipAccessory(val type: PetAccessoryType, val accessory: PetAccessory) : PetEvent
 }

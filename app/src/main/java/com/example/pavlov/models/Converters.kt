@@ -1,6 +1,8 @@
 package com.example.pavlov.models
 
 import androidx.room.TypeConverter
+import com.example.pavlov.viewmodels.PetAccessory
+import com.example.pavlov.viewmodels.PetAccessoryType
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration
@@ -13,6 +15,24 @@ import kotlin.time.Duration
  */
 class Converters {
     private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+    @TypeConverter fun PetAccessoryToInt(value: PetAccessory?): Int? {
+        return value?.ordinal
+    }
+
+    @TypeConverter fun IntToPetAccessory(value: Int?): PetAccessory? {
+        if (value == null) return null
+        return PetAccessory.entries[value]
+    }
+
+    @TypeConverter fun PetAccessoryTypeToInt(value: PetAccessoryType?): Int? {
+        return value?.ordinal
+    }
+
+    @TypeConverter fun IntToPetAccessoryType(value: Int?): PetAccessoryType? {
+        if (value == null) return null
+        return PetAccessoryType.entries[value]
+    }
 
     @TypeConverter fun TimestamptoDate(value: String?): LocalDateTime? {
         return value?.let { LocalDateTime.parse(it, formatter) }

@@ -154,7 +154,15 @@ fun PavlovNavHost(
             composable<Screen.Pet> {
                 val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
 
-                val petViewModel = viewModel(PetViewModel::class)
+                val petViewModel = viewModel<PetViewModel>(factory =
+                    object : ViewModelProvider.Factory {
+                        private val db = PavlovApplication.local_db
+                        override fun<T: ViewModel> create(modelClass: Class<T>): T {
+                            @Suppress("UNCHECKED_CAST")
+                            return PetViewModel(db.petDao) as T
+                        }
+                    }
+                )
                 val petState by petViewModel.state.collectAsState()
                 PetScreen(
                     state = petState,

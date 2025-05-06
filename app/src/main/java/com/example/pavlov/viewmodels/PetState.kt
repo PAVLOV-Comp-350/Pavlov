@@ -18,10 +18,10 @@ enum class PetAccessory(
     @DrawableRes val resId: Int
 ) {
     NONE(PetAccessoryType.NONE, "None", "none", -1, -1),
-    FEZ(PetAccessoryType.HAT, "Fez", "Fez", 800, R.drawable.fez),
-    DUNCE_CAP(PetAccessoryType.HAT, "Dunce Cap", "Dunce Cap", 100, R.drawable.dunce_cap),
-    GLASSES(PetAccessoryType.FACE, "Glasses", "Glasses", 400, R.drawable.glasses),
-    SUN_GLASSES(PetAccessoryType.FACE, "Sun Glasses", "Sunglasses", 1000, R.drawable.sunglasses);
+    FEZ(PetAccessoryType.HAT, "Fez", "FezLayer", 800, R.drawable.fez),
+    DUNCE_CAP(PetAccessoryType.HAT, "Dunce Cap", "DunceCapLayer", 100, R.drawable.dunce_cap),
+    GLASSES(PetAccessoryType.FACE, "Glasses", "GlassesLayer", 400, R.drawable.glasses),
+    SUN_GLASSES(PetAccessoryType.FACE, "Sun Glasses", "SunglassesLayer", 1000, R.drawable.sunglasses);
     
     companion object  {
         fun getAccessoriesByType(type: PetAccessoryType): List<PetAccessory> {

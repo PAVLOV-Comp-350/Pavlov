@@ -2,6 +2,7 @@ package com.example.pavlov.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pavlov.PavlovApplication
 import com.example.pavlov.models.PetAccessoryTransactionRecord
 import com.example.pavlov.models.PetDao
 import com.example.pavlov.models.PetEquip
@@ -50,6 +51,7 @@ class PetViewModel(
                         event.accessory.type
                     ))
                 }
+                PavlovApplication.removeTreats(event.accessory.price)
             }
         }
     }

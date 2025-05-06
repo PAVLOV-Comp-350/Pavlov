@@ -24,21 +24,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pavlov.R
-import com.example.pavlov.theme.ThemeSwitch
+//import com.example.pavlov.theme.ThemeSwitch
 import com.example.pavlov.utils.Vec2
 import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedState
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.LinearProgressIndicator
+//import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
+//import androidx.compose.foundation.background
+//import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.draw.clip
+//import androidx.compose.ui.draw.clip
 import androidx.compose.animation.core.*
-import androidx.compose.ui.geometry.Offset
 import com.example.pavlov.theme.Retro
 import com.example.pavlov.utils.getRank
 import com.example.pavlov.utils.getCurrentRankStartXp
@@ -46,7 +45,21 @@ import com.example.pavlov.utils.getNextRankXP
 import com.airbnb.lottie.compose.*
 // androidx.compose.ui.text.font.FontWeight
 //import com.example.pavlov.theme.NablaFont
-import android.util.Log
+//import android.util.Log
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+//import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import com.example.pavlov.utils.getTitleForXp
+import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.Offset
+import android.media.MediaPlayer
+import androidx.compose.ui.platform.LocalContext
+
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +70,10 @@ fun PavlovTopBar(
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
+        navigationIcon = {
+            // 🐶 Live Pet animation on the left
+            CircularXpLevelIndicator(sharedState = sharedState)
+        },
         title = {
             Column(
                 modifier = Modifier
@@ -83,7 +100,7 @@ fun PavlovTopBar(
                 Text(
                     text = "${sharedState.treats}",
                     fontFamily = Retro,
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
 
@@ -117,10 +134,23 @@ fun PavlovTopBar(
 }
 
 @Composable
-fun ShimmeringXpBar(progress: Float) {
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+fun ShimmeringXpCircleWithPulse(progress: Float, rank: Int) {
+//    val isLevelUp = progress >= 1f
+    var lastRank by remember { mutableStateOf(rank) }
+    val isLevelUp = lastRank != rank
 
-    val shimmerX by infiniteTransition.animateFloat(
+    val pulseScale by animateFloatAsState(
+        targetValue = if (isLevelUp) 1.5f else 1f,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "pulse"
+    )
+    LaunchedEffect(rank) {
+        if (isLevelUp){
+            lastRank = rank
+        }
+    }
+
+    val shimmerX by rememberInfiniteTransition(label = "shimmer").animateFloat(
         initialValue = 0f,
         targetValue = 1000f,
         animationSpec = infiniteRepeatable(
@@ -132,81 +162,150 @@ fun ShimmeringXpBar(progress: Float) {
 
     val shimmerBrush = Brush.linearGradient(
         colors = listOf(
-            Color(0xFFFFD700), // Gold
-            Color(0xFFFFFF00), // Bright yellow
+            Color(0xFFFFD700),
+            Color(0xFFFFFF00),
             Color(0xFFFFD700)
         ),
         start = Offset(shimmerX, 0f),
         end = Offset(shimmerX + 200f, 0f)
     )
 
-    Box(
+    Canvas(modifier = Modifier.size((60 * pulseScale).dp)) {
+        // Glow
+        drawCircle(
+            color = Color(0xFFFFFF00).copy(alpha = 0.25f),
+            radius = size.minDimension / 2f + 8f
+        )
+
+        // Background circle
+        drawArc(
+            color = Color.DarkGray,
+            startAngle = 0f,
+            sweepAngle = 360f,
+            useCenter = false,
+            style = Stroke(width = 8f)
+        )
+
+        // Animated XP shimmer progress
+        drawArc(
+            brush = shimmerBrush,
+            startAngle = -90f,
+            sweepAngle = progress * 360f,
+            useCenter = false,
+            style = Stroke(width = 8f)
+        )
+    }
+}
+
+@Composable
+fun PlayLevelUpSound(rank: Int) {
+    val context = LocalContext.current
+    var lastRank by remember { mutableStateOf(rank) }
+    val mediaPlayer = remember { mutableStateOf<MediaPlayer?>(null) }
+
+    LaunchedEffect(rank) {
+        if (rank > lastRank) {
+            mediaPlayer.value?.release() // Clean up any existing player
+            mediaPlayer.value = MediaPlayer.create(context, R.raw.level_up).apply {
+                setOnCompletionListener {
+                    it.release()
+                    mediaPlayer.value = null
+                }
+                start()
+            }
+            lastRank = rank
+        }
+    }
+}
+
+
+
+
+
+
+
+@Composable
+fun CircularXpLevelIndicator(sharedState: SharedState) {
+    val context = LocalContext.current
+    val currentXp = sharedState.currentXp
+    val rank = getRank(currentXp)
+    val rankStartXp = getCurrentRankStartXp(currentXp)
+    val nextRankXp = getNextRankXP(currentXp)
+    val title = getTitleForXp(currentXp)
+
+    val xpInCurrentRank = (currentXp - rankStartXp).coerceAtLeast(0)
+    val xpToNextRank = (nextRankXp - rankStartXp).coerceAtLeast(1)
+    val xpProgress = xpInCurrentRank.toFloat() / xpToNextRank.toFloat()
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = xpProgress,
+        animationSpec = tween(1000, easing = FastOutSlowInEasing),
+        label = "Animated XP Progress"
+    )
+
+    PlayLevelUpSound(rank)
+
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .fillMaxWidth()
-            .height(12.dp)
-            .clip(RoundedCornerShape(3.dp))
-            .background(Color.DarkGray) // <-- this is the background track
+            .padding(8.dp)
+            .height(IntrinsicSize.Min)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(progress.coerceIn(0f, 1f))
-                .fillMaxHeight()
-                .background(shimmerBrush) // <-- shimmer only on the progress bar
+        Box(contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.size(50.dp)) {
+                ShimmeringXpCircleWithPulse(progress = animatedProgress, rank = rank)
+                Text(
+                    text = "$rank",
+                    fontSize = 20.sp,
+                    fontFamily = Retro,
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+
+        }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Text(
+            text = title,
+            fontSize = 15.sp,
+            fontFamily = Retro,
+            color = Color.White,
+            modifier = Modifier.align(Alignment.CenterVertically)
         )
     }
 }
 
 
 
-@Composable
-fun RankAndXpBar(sharedState: SharedState) {
-    val currentXp = sharedState.currentXp
-
-    val rank = getRank(currentXp)
-    val rankStartXp = getCurrentRankStartXp(currentXp)
-    val nextRankXp = getNextRankXP(currentXp)
-
-    val xpInCurrentRank = (currentXp - rankStartXp).coerceAtLeast(0)
-    val xpToNextRank = (nextRankXp - rankStartXp).coerceAtLeast(1)
-    val progress = xpInCurrentRank.toFloat() / xpToNextRank.toFloat()
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Text(
-                text = "$rank",
-                fontSize = 12.sp,
-                fontFamily = Retro,
-                color = Color.White
-            )
-
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        ShimmeringXpBar(progress = progress)
-    }
-}
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+//@Composable
+//fun LiveLottiePet() {
+//    val composition by rememberLottieComposition(
+//        LottieCompositionSpec.Asset("dog_animation.json")
+//    )
+//
+//    if (composition != null) {
+//        Log.d("Lottie", "Composition loaded!")
+//    } else {
+//        Log.d("Lottie", "Composition is NULL")
+//    }
+//
+//    val progress by animateLottieCompositionAsState(
+//        composition,
+//        iterations = LottieConstants.IterateForever
+//    )
+//
+//    if (composition != null) {
+//        LottieAnimation(
+//            composition = composition,
+//            progress = { progress },
+//            modifier = Modifier.size(90.dp)
+//        )
+//    }
+//}

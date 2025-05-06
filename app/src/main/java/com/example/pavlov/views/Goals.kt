@@ -88,7 +88,7 @@ fun GoalsListScreen(
         topBar = {
             Column {
                 PavlovTopBar(sharedState, onEvent = { onEvent(it) })
-                RankAndXpBar(sharedState) // XP bar just below top bar
+            // XP bar just below top bar
             }
         },
         floatingActionButton = {

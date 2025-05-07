@@ -85,7 +85,6 @@ fun GameDialog(
 
                 GameDialogActions(game, onDismiss, onPlay, canPlay)
 
-                // Display error message if can't afford
                 if (!canPlay) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -205,7 +204,6 @@ private fun GameDialogCostInfo(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Treats badge
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -213,8 +211,8 @@ private fun GameDialogCostInfo(
                 .background(
                     brush = Brush.linearGradient(
                         listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.primaryContainer
+                            CasinoTheme.getTreatIndicatorColor(),
+                            CasinoTheme.getTreatIndicatorColor().copy(alpha = 0.8f)
                         )
                     )
                 )
@@ -222,7 +220,7 @@ private fun GameDialogCostInfo(
         ) {
             Text(
                 text = "$availableTreats",
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onTertiary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
             )
@@ -242,7 +240,7 @@ private fun GameDialogCostInfo(
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = if (canPlay)
-                    MaterialTheme.colorScheme.primary
+                    CasinoTheme.getTreatIndicatorColor()
                 else
                     MaterialTheme.colorScheme.error
             ) {
@@ -284,6 +282,10 @@ private fun GameDialogActions(
         OutlinedButton(
             onClick = onDismiss,
             modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
             shape = RoundedCornerShape(24.dp)
         ) {
             Text("Close")
@@ -297,7 +299,7 @@ private fun GameDialogActions(
                 containerColor = if (canPlay)
                     CasinoTheme.PlayButtonColor
                 else
-                    MaterialTheme.colorScheme.surfaceVariant
+                    MaterialTheme.colorScheme.error
             ),
             shape = RoundedCornerShape(24.dp)
         ) {

@@ -71,7 +71,7 @@ fun PavlovTopBar(
 ) {
     TopAppBar(
         navigationIcon = {
-            // 🐶 Live Pet animation on the left
+
             CircularXpLevelIndicator(sharedState = sharedState)
         },
         title = {
@@ -278,34 +278,3 @@ fun CircularXpLevelIndicator(sharedState: SharedState) {
     }
 }
 
-
-
-
-
-
-
-//@Composable
-//fun LiveLottiePet() {
-//    val composition by rememberLottieComposition(
-//        LottieCompositionSpec.Asset("dog_animation.json")
-//    )
-//
-//    if (composition != null) {
-//        Log.d("Lottie", "Composition loaded!")
-//    } else {
-//        Log.d("Lottie", "Composition is NULL")
-//    }
-//
-//    val progress by animateLottieCompositionAsState(
-//        composition,
-//        iterations = LottieConstants.IterateForever
-//    )
-//
-//    if (composition != null) {
-//        LottieAnimation(
-//            composition = composition,
-//            progress = { progress },
-//            modifier = Modifier.size(90.dp)
-//        )
-//    }
-//}

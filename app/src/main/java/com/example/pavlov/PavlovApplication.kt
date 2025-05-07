@@ -91,16 +91,6 @@ class PavlovApplication : Application() {
         preferences = PreferenceManager.getDefaultSharedPreferences(this)
         _isDarkTheme.value = preferences.getBoolean(DARK_MODE_KEY, false)
         _treats.value = preferences.getInt(TREATS_KEY, 0)
-
-//        preferences.edit().apply {
-//            putInt(XP_KEY, 0)
-//            putInt(MAX_XP_KEY, 0)
-//            apply()
-//        }
-//
-//        _xp.value = 0
-//        _maxXp.value = 0
-
         _xp.value = preferences.getInt(XP_KEY, 0)
         _maxXp.value = preferences.getInt(MAX_XP_KEY, 100)
 

@@ -188,7 +188,6 @@ fun TimePickerDialog(
                             val totalMinutes = hours24 * 60 + minutes
                             onTimeSelected(totalMinutes)
 
-                            // Schedule the notification here
                             scheduleNotification(context, "Your Task", totalMinutes)
                         }
                     ) {
@@ -223,6 +222,9 @@ fun TimeSelector(
 
     Button(
         onClick = onTimeClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.tertiary
+        ),
         modifier = modifier
     ) {
         Text("Time: $timeString")

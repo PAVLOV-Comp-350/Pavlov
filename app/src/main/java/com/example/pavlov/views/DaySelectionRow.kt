@@ -47,7 +47,7 @@ fun DayButton(
         modifier = Modifier
             .size(36.dp)
             .clip(CircleShape),
-        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        color = if (isActive) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.surfaceVariant,
         onClick = { onDayToggle(day) }
     ) {
         Box(contentAlignment = Alignment.Center) {

@@ -9,5 +9,6 @@ data class SharedState(
     val rewardCollectables: List<GoalRewardCollectable> = emptyList(),
     val collectableTarget: Vec2 = Vec2.Zero,
     val currentXp: Int = 0,
-    val maxXp: Int = 100
+    val maxXp: Int = 100,
+    val manualTitle: String?= null
 )

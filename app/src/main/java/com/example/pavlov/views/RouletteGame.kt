@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,26 +14,44 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -48,6 +67,8 @@ import com.example.pavlov.viewmodels.RouletteEvent
 import com.example.pavlov.viewmodels.ScratcherEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.math.cos
+import kotlin.math.sin
 
 
 /**
@@ -86,6 +107,7 @@ fun RouletteGame(
             )
 
             SpinningWheel(
+                gameState = gameState,
                 isSpinning = gameState.isSpinning,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
@@ -103,12 +125,22 @@ fun RouletteGame(
                         SoundManager.playRouletteSound()
                     }
                 },
-                enabled = !gameState.isSpinning && gameState.pick.isNotBlank()
+                enabled = !gameState.isSpinning && gameState.pick.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CasinoTheme.PlayButtonColor
+                ),
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(50.dp)
             ) {
-                Text("Spin")
+                Text(
+                    text = "Spin",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
-            RouletteBettingBoard(
+            RouletteBettingBoardDropdown(
                 selectedIndex = gameState.pickIndex,
                 onEvent = { pickEvent ->
                     onEvent(pickEvent)
@@ -116,28 +148,6 @@ fun RouletteGame(
                 modifier = Modifier
             )
 
-
-            if (gameState.resultMessage.isNotBlank() && !gameState.isSpinning) {
-                val winningNumberStr = if (gameState.win.isNotBlank()) {
-                    "Winning Number: ${gameState.win}"
-                } else {
-                    val parts = gameState.resultMessage.split("")
-                    val winIndex = parts.indexOf("Number:")
-                    if (winIndex >= 0 && winIndex + 1 < parts.size) {
-                        "Winning Number: ${parts[winIndex + 1]}"
-                    } else {
-                        ""
-                    }
-                }
-                if (winningNumberStr.isNotBlank()) {
-                    Text(
-                        text = winningNumberStr,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
             if (gameState.pick.isBlank() && !gameState.isSpinning) {
                 Text(
                     text = "Please select a number first",
@@ -181,43 +191,230 @@ fun RouletteGame(
         )
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RouletteBettingBoard(
+fun RouletteBettingBoardDropdown(
     selectedIndex: Int,
     onEvent: (RouletteEvent.SelectPick) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val roulettePicks = listOf("1 - 12", "13 - 24", "25 - 36", "00") + (0..36).map { it.toString() }
+    val roulettePicks = listOf("Red", "Black", "1 - 12", "13 - 24", "25 - 36", "00") + (0..36).map { it.toString() }
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = roulettePicks.getOrNull(selectedIndex) ?: "Select a Pick"
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = modifier
     ) {
-        roulettePicks.chunked(6).forEach { rowItems ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                rowItems.forEach { label ->
-                    val index = roulettePicks.indexOf(label)
-                    val isSelected = index == selectedIndex
-                    TextButton(
-                        onClick = { onEvent(RouletteEvent.SelectPick(index)) },
+        TextField(
+            readOnly = true,
+            value = selectedLabel,
+            onValueChange = {},
+            label = { Text("Pick") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            roulettePicks.forEachIndexed { index, label ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        onEvent(RouletteEvent.SelectPick(index))
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SpinningWheel(
+    gameState: RouletteGameState,
+    isSpinning: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val wheelOrder = listOf(
+        "0", "28", "9", "26", "30", "11", "7", "20", "32", "17", "5", "22",
+        "34", "15", "3", "24", "36", "13", "1", "00", "27", "10", "25", "29",
+        "12", "8", "19", "31", "18", "6", "21", "33", "16", "4", "23", "35",
+        "14", "2"
+    )
+
+    val winningNumber = listOf("00", "0") + (1..36).map {it.toString() }
+
+    val redNumbers = setOf("1", "3", "5", "7", "9", "12", "14", "16", "18", "19", "21", "23", "25", "27", "30", "32", "34", "36")
+    val blackNumbers = setOf("2", "4", "6", "8", "10", "11", "13", "15", "17", "20", "22", "24", "26", "28", "29", "31", "33", "35")
+
+    val rotation = remember { Animatable(0f) }
+
+    val lastSpinNumber = remember { mutableStateOf<String?>(null) }
+
+    val winningIndexMapping: Map<String, Int> = winningNumber.associateWith { number ->
+        wheelOrder.indexOf(number)
+    }
+
+    LaunchedEffect(gameState.win) {
+        val currentWin = gameState.win
+        if ( currentWin != lastSpinNumber.value && isSpinning) {
+            // Get the correct index of the winning number from the mapping
+            val winningIndex = winningIndexMapping[currentWin] ?: return@LaunchedEffect
+            if (winningIndex == -1) return@LaunchedEffect // Handle invalid case
+
+            lastSpinNumber.value = currentWin // Prevent future re-spins on same win
+
+            val fullSpins = (3..6).random() // Random number of full spins
+            val totalRotation = 360f * fullSpins // Total rotation for multiple spins
+
+            val anglePerItem = 360f / wheelOrder.size
+            val rawTargetAngle = winningIndex * anglePerItem + anglePerItem / 2 // Center the target on the winning item
+
+            // Adjust the target angle to ensure proper alignment
+            val targetAngle = (360f - (rawTargetAngle % 360f) - 90f) % 360f
+
+            // Use 0 as the fixed start angle for predictability
+            val startAngle = 0f // Fixed starting angle for the spin
+
+            // Snap to the fixed start angle
+            rotation.snapTo(startAngle)
+
+            // Calculate the final target rotation: start angle + full spins + target angle
+            val targetRotation = startAngle + totalRotation + targetAngle
+
+            // Animate the wheel to the target position
+            rotation.animateTo(
+                targetValue = targetRotation,
+                animationSpec = tween(durationMillis = 4000, easing = FastOutSlowInEasing)
+            )
+        }
+    }
+
+    Box(
+        modifier = modifier.size(340.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(rotationZ = rotation.value)
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val radius = size.minDimension / 2f
+                val center = Offset(size.width / 2f, size.height / 2f)
+                val sliceAngle = 360f / wheelOrder.size
+
+                drawCircle(
+                    color = Color.DarkGray,
+                    radius = radius + 20f,
+                    center = center,
+                    style = Stroke(width = 10f)
+                )
+
+                wheelOrder.forEachIndexed { index, label ->
+                    val startAngle = index * sliceAngle
+                    val angleRad = Math.toRadians((startAngle + sliceAngle / 2).toDouble())
+
+                    val endX = center.x + radius * cos(angleRad).toFloat()
+                    val endY = center.y + radius * sin(angleRad).toFloat()
+
+                    drawLine(
+                        color = Color.White,
+                        start = center,
+                        end = Offset(endX, endY),
+                        strokeWidth = 2f
+                    )
+
+                    val color = when (label) {
+                        "0", "00" -> Color.hsv(120f, 0.4f, 0.7f)
+                        in redNumbers -> Color.Red
+                        in blackNumbers -> Color.Black
+                        else -> Color.Gray
+                    }
+
+                    drawArc(
+                        color = color,
+                        startAngle = startAngle,
+                        sweepAngle = sliceAngle,
+                        useCenter = true,
+                        topLeft = Offset(center.x - radius, center.y - radius),
+                        size = Size(radius * 2, radius * 2)
+                    )
+
+                    drawCircle(
+                        color = Color(0xFF4E342E),
+                        radius = radius * 0.7f, // small center circle (adjust as needed)
+                        center = center,
+                        style = Fill
+                    )
+
+                    drawLine(
+                        color = Color(0xFFFFA500),
+                        start = Offset(center.x - radius * 0.15f, center.y),
+                        end = Offset(center.x + radius * 0.15f, center.y),
+                        strokeWidth = 20f
+                    )
+                    drawLine(
+                        color = Color(0xFFFFA500),
+                        start = Offset(center.x, center.y - radius * 0.15f),
+                        end = Offset(center.x, center.y + radius * 0.15f),
+                        strokeWidth = 20f
+                    )
+
+                    val textOffset = Offset(
+                        x = center.x + (radius * 0.92f * cos(angleRad)).toFloat(),
+                        y = center.y + (radius * 0.92f * sin(angleRad)).toFloat()
+                    )
+
+                    val paint = android.graphics.Paint().apply {
+                        this.color = android.graphics.Color.WHITE
+                        textAlign = android.graphics.Paint.Align.CENTER
+                        textSize = 24f
+                        isFakeBoldText = true
+                    }
+
+                    val angleDegrees = Math.toDegrees(angleRad).toFloat() + 90f
+                    val nativeCanvas = drawContext.canvas.nativeCanvas
+
+                    nativeCanvas.save()
+                    nativeCanvas.rotate(angleDegrees, textOffset.x, textOffset.y)
+                    nativeCanvas.drawText(label, textOffset.x, textOffset.y, paint)
+                    nativeCanvas.restore()
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Pointer",
+                tint = Color.Yellow,
+                modifier = Modifier
+                    .size(32.dp)
+                    .padding(top = 4.dp)
+            )
+
+            gameState.win.let { win ->
+                if (!gameState.isSpinning) {
+                    Box(
                         modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = if (isSelected) {
-                                        CasinoTheme.EmeraldGradient.map { it.copy(alpha = 0.5f) }
-                                    } else {
-                                        CasinoTheme.EmeraldGradient
-                                    }
-                                )
-                            )
+                            .padding(top = 36.dp)
+                            .background(Color.DarkGray, shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            label,
-                            color = if (isSelected) Color.Black else Color.White
+                            text = "Winner: $win",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -225,42 +422,3 @@ fun RouletteBettingBoard(
         }
     }
 }
-
-
-        @Composable
-        fun SpinningWheel(
-            isSpinning: Boolean,
-            modifier: Modifier = Modifier
-        ) {
-            val rotation = remember { Animatable(0f) }
-
-            // Launch the animation if the wheel is spinning
-            LaunchedEffect(isSpinning) {
-                if (isSpinning) {
-                    // Animate rotation over 3 seconds
-                    rotation.animateTo(
-                        targetValue = rotation.value + 1440f,  // Rotate 360 degrees
-                        animationSpec = tween(
-                            durationMillis = 4000,
-                            easing = FastOutSlowInEasing
-                        )
-                    )
-                }
-            }
-
-            // Apply the rotation to the wheel's modifier
-            Box(
-                modifier = modifier
-                    .size(160.dp)
-                    .graphicsLayer(
-                        rotationZ = rotation.value // Apply rotation to the wheel
-                    )
-            ) {
-                // Add your roulette wheel image or shape here
-                Image(
-                    painter = painterResource(id = R.drawable.roulette_wheel), // Use a wheel image
-                    contentDescription = "Roulette Wheel",
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        }

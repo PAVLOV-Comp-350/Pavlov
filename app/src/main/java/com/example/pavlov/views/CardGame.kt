@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.pavlov.models.CardGameState
+import com.example.pavlov.theme.CasinoTheme
 import com.example.pavlov.viewmodels.CardEvent
 
 /**
@@ -84,18 +88,39 @@ fun CardGame(
             ) {
                 TextButton(
                     onClick = { onEvent(CardEvent.DealFromDeck) },
-                    enabled = gameState.hand.isEmpty()
+                    enabled = gameState.hand.isEmpty(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CasinoTheme.PlayButtonColor
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth(0.4f)
+                        .height(50.dp)
                 ) {
-                    Text("Deal")
+                    Text(
+                        "Deal",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 TextButton(
                     onClick = {
                         onEvent(CardEvent.Redraw)
                     },
-                    enabled = gameState.hand.isNotEmpty()
-                ) {
-                    Text("Redraw")
+                    enabled = gameState.hand.isNotEmpty(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CasinoTheme.PlayButtonColor
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(50.dp),
+
+                    ) {
+                    Text(
+                        "Redraw",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 

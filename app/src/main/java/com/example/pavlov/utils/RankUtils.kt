@@ -2,8 +2,26 @@ package com.example.pavlov.utils
 
 import kotlin.math.pow
 
-
 val xpRanks = listOf(
+    1 to 0,
+    2 to 100,
+    3 to 250,
+    4 to 400,
+    5 to 600,
+    6 to 800,
+    7 to 1100,
+    8 to 1400,
+    9 to 1800,
+    10 to 2300,
+    11 to 2900,
+    12 to 3600,
+    13 to 4500,
+)
+
+
+
+
+val xpTitles = listOf(
     0 to "Worm",
     100 to "Beggar",
     250 to "Potato",
@@ -21,20 +39,24 @@ val xpRanks = listOf(
 
 
 fun getXpReward(level: Int): Int {
-    val baseXp = 50.0
+    val baseXp = 30.0
     val multiplier = 1.1
     return (baseXp * multiplier.pow(level - 1)).toInt()
 }
 
-fun getRank(xp: Int): String {
-    return xpRanks.lastOrNull { xp >= it.first }?.second ?: "Unknown"
+fun getRank(xp: Int): Int {
+    return xpRanks.lastOrNull { xp >= it.second }?.first ?: 1
 }
 
-
 fun getCurrentRankStartXp(xp: Int): Int {
-    return xpRanks.lastOrNull { xp >= it.first }?.first ?: 0
+    return xpRanks.lastOrNull { xp >= it.second }?.second ?: 0
 }
 
 fun getNextRankXP(xp: Int): Int {
-    return xpRanks.firstOrNull { xp < it.first }?.first ?: (xp + 1000)
+    return xpRanks.firstOrNull { xp < it.second }?.second ?: (xp + 1000)
 }
+
+fun getTitleForXp(xp: Int): String {
+    return xpTitles.lastOrNull { xp >= it.first }?.second ?: "Unknown"
+}
+

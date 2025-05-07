@@ -113,7 +113,7 @@ class SharedViewModel: ViewModel() {
     }
 
     fun gainXpFromTask() {
-        val newXp = PavlovApplication.xp.value + 50
+        val newXp = PavlovApplication.xp.value + 80
         val nextMaxXp = getNextRankXP(newXp)
 
         PavlovApplication.setXp(newXp)

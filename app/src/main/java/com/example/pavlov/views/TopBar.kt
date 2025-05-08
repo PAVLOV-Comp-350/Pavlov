@@ -72,7 +72,10 @@ fun PavlovTopBar(
     TopAppBar(
         navigationIcon = {
 
-            CircularXpLevelIndicator(sharedState = sharedState)
+            CircularXpLevelIndicator(
+                sharedState = sharedState,
+                onEvent = onEvent
+                )
         },
         title = {
             Column(
@@ -225,17 +228,34 @@ fun PlayLevelUpSound(rank: Int) {
 
 
 @Composable
-fun CircularXpLevelIndicator(sharedState: SharedState) {
+fun CircularXpLevelIndicator(
+    sharedState: SharedState,
+    onEvent: (SharedEvent) -> Unit
+) {
     val context = LocalContext.current
     val currentXp = sharedState.currentXp
     val rank = getRank(currentXp)
     val rankStartXp = getCurrentRankStartXp(currentXp)
     val nextRankXp = getNextRankXP(currentXp)
-    val title = getTitleForXp(currentXp)
+    val manualTitle = sharedState.manualTitle
+    val title = manualTitle ?: getTitleForXp(currentXp)
+
 
     val xpInCurrentRank = (currentXp - rankStartXp).coerceAtLeast(0)
     val xpToNextRank = (nextRankXp - rankStartXp).coerceAtLeast(1)
     val xpProgress = xpInCurrentRank.toFloat() / xpToNextRank.toFloat()
+
+    val previousRank = remember { mutableStateOf(rank) }
+
+    LaunchedEffect(currentXp) {
+        val newRank = getRank(currentXp)
+        if (newRank > previousRank.value) {
+            previousRank.value = newRank
+            if (sharedState.manualTitle != null) {
+                onEvent(SharedEvent.ManualTitle(null))  // Reset manual title on level-up
+            }
+        }
+    }
 
     val animatedProgress by animateFloatAsState(
         targetValue = xpProgress,

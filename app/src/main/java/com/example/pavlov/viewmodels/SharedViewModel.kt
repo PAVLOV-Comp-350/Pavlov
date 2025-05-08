@@ -19,6 +19,7 @@ import kotlin.random.Random
 //import com.example.pavlov.utils.getRank
 import com.example.pavlov.utils.getCurrentRankStartXp
 import com.example.pavlov.utils.getNextRankXP
+import com.example.pavlov.utils.getRank
 
 
 class SharedViewModel: ViewModel() {
@@ -54,14 +55,26 @@ class SharedViewModel: ViewModel() {
             }
             is SharedEvent.UpdateXp -> {
                 _state.update { current ->
+                    val oldTitle = getRank(current.currentXp)
+                    val newTitle = getRank(event.newXp)
+
                     current.copy(
                         currentXp = event.newXp,
-                        maxXp = event.newMaxXp
+                        maxXp = event.newMaxXp,
+                        manualTitle = if(newTitle > oldTitle) null else current.manualTitle
                     )
                 }
             }
             is SharedEvent.GainXpFromTask -> {
                 gainXpFromTask()
+            }
+
+            is SharedEvent.ManualTitle -> {
+                _state.update { current ->
+                    current.copy(
+                        manualTitle = event.title
+                    )
+                }
             }
         }
     }

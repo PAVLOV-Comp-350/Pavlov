@@ -10,4 +10,5 @@ sealed interface SharedEvent : AnyEvent {
     data class GenerateCollectableRewards(val origin: Vec2) : SharedEvent
     data class UpdateXp(val newXp: Int, val newMaxXp: Int): SharedEvent
     data object GainXpFromTask : SharedEvent
+    data class ManualTitle(val title:String?) : SharedEvent
 }

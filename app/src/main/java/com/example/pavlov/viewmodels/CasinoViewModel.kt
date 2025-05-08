@@ -336,34 +336,20 @@ class CasinoViewModel: ViewModel() {
                         return@let
                     }
 
-                    if (PavlovApplication.treats.value < 8) {
-                        return@let
-
-                    }
-
-                    PavlovApplication.removeTreats(8)
-
                     if (!gameState.isSpinning) {
+                        val randomWin = rouletteGetRandomWin()
+
                         _state.update {
                             it.copy(
                                 rouletteGameState = gameState.copy(
-                                    isSpinning = true
+                                    isSpinning = true,
+                                    win = randomWin
                                 )
                             )
                         }
 
                         viewModelScope.launch {
                             delay(4000L) // Wait 4 seconds(sound clip is also 4 seconds)
-
-                            val randomWin = rouletteGetRandomWin()
-
-                            _state.update {
-                                it.copy(
-                                    rouletteGameState = it.rouletteGameState?.copy(
-                                        win = randomWin
-                                    )
-                                )
-                            }
 
                             // Trigger StopSpinning
                             handleRouletteEvent(RouletteEvent.StopSpinning)
@@ -380,22 +366,36 @@ class CasinoViewModel: ViewModel() {
 
                     val winningNumberInt = winningNumberStr.toIntOrNull()
 
-                    val isWin = if (selectedPickStr.contains("-")) {
-                        // Handle range-based picks like "1 - 12"
-                        val rangeParts = selectedPickStr.split("-").map { it.trim().toIntOrNull() }
-                        if (rangeParts.size == 2 && winningNumberInt != null) {
-                            val (start, end) = rangeParts
-                            if (start != null && end != null) {
-                                winningNumberInt in start..end
+                    val redNumbers = setOf(32, 19, 21, 25, 34, 27, 36, 30, 23, 5, 16, 1, 14, 9, 18, 7, 12, 3)
+                    val blackNumbers = setOf(15, 4, 2, 17, 6, 13, 11, 8, 10, 24, 33, 20, 31, 22, 29, 28, 35, 26)
+
+                    val isWin = when {
+                        selectedPickStr.equals("red", ignoreCase = true) -> {
+                            winningNumberInt?.let { redNumbers.contains(it) } == true
+                        }
+                        selectedPickStr.equals("black", ignoreCase = true) -> {
+                            winningNumberInt?.let { blackNumbers.contains(it) } == true
+                        }
+                        selectedPickStr.contains("-") -> {
+                            // Handle range-based
+                            val rangeParts = selectedPickStr.split("-").map { it.trim().toIntOrNull() }
+                            if (rangeParts.size == 2 && winningNumberInt != null) {
+                                val (start, end) = rangeParts
+                                if (start != null && end != null) {
+                                    winningNumberInt in start..end
+                                } else false
                             } else false
-                        } else false
-                    } else {
-                        // Exact match case (numbers or "0", "00")
-                        selectedPickStr == winningNumberStr
+                        }
+                        else -> {
+                            // Exact match case
+                            selectedPickStr == winningNumberStr
+                        }
                     }
 
                     val prize = if (isWin) {
                         when {
+                            selectedPickStr.equals("red", ignoreCase = true) -> 8
+                            selectedPickStr.equals("black", ignoreCase = true) -> 8
                             selectedPickStr == "0" || selectedPickStr == "00" -> 280
                             selectedPickStr.contains("-") -> 16
                             else -> 280
@@ -430,6 +430,8 @@ class CasinoViewModel: ViewModel() {
                             isSpinning = false,
                             pick = "",
                             board = it.rouletteGameState?.board ?: (listOf(
+                                "Red",
+                                "Black",
                                 "1 - 12",
                                 "13 - 24",
                                 "25 - 36",
@@ -461,6 +463,8 @@ class CasinoViewModel: ViewModel() {
                     isSpinning = false,
                     pick = "",
                     board = listOf(
+                        "Red",
+                        "Black",
                         "1 - 12",
                         "13 - 24",
                         "25 - 36",

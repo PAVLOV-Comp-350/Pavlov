@@ -7,48 +7,58 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import com.example.pavlov.R
 import com.example.pavlov.models.CasinoGame
 import com.example.pavlov.theme.CasinoTheme
+import com.example.pavlov.PavlovApplication
 
 /**
  * Provides the list of available casino games
  */
 @Composable
-fun getCasinoGames() = remember {
-    listOf(
-        CasinoGame(
-            name = "Scratcher",
-            iconResId = R.drawable.scratcher_icon,
-            gradient = CasinoTheme.BronzeGradient,
-            costInTreats = 5,
-        ),
-        CasinoGame(
-            name = "Roulette",
-            iconResId = R.drawable.roulette_icon,
-            gradient = CasinoTheme.BronzeGradient,
-            costInTreats = 8,
-        ),
-        CasinoGame(
-            name = "Slots",
-            iconResId = R.drawable.slots_icon,
-            gradient = CasinoTheme.BronzeGradient,
-            costInTreats = 10,
-        ),
-        CasinoGame(
-            name = "Pachinko",
-            iconResId = R.drawable.pachinko_icon,
-            gradient = CasinoTheme.BronzeGradient,
-            costInTreats = 15,
-        ),
-        CasinoGame(
-            name = "Poker",
-            iconResId = R.drawable.card_icon,
-            gradient = CasinoTheme.BronzeGradient,
-            costInTreats = 12,
+fun getCasinoGames(): List<CasinoGame> {
+    val isDarkMode by PavlovApplication.isDarkTheme.collectAsState()
+    val tileGradient = if (isDarkMode) {
+        CasinoTheme.BronzeGradient
+    } else {
+        CasinoTheme.PlatinumGradient
+    }
+
+    return listOf(
+            CasinoGame(
+                name = "Scratcher",
+                iconResId = R.drawable.scratcher_icon,
+                gradient = tileGradient,
+                costInTreats = 5,
+            ),
+            CasinoGame(
+                name = "Roulette",
+                iconResId = R.drawable.roulette_icon,
+                gradient = tileGradient,
+                costInTreats = 8,
+            ),
+            CasinoGame(
+                name = "Slots",
+                iconResId = R.drawable.slots_icon,
+                gradient = tileGradient,
+                costInTreats = 10,
+            ),
+            CasinoGame(
+                name = "Pachinko",
+                iconResId = R.drawable.pachinko_icon,
+                gradient = tileGradient,
+                costInTreats = 15,
+            ),
+            CasinoGame(
+                name = "Poker",
+                iconResId = R.drawable.card_icon,
+                gradient = tileGradient,
+                costInTreats = 12,
+            )
         )
-    )
-}
+    }
 
 /**
  * Displays grid of game tiles

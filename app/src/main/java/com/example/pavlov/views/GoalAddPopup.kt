@@ -1,5 +1,6 @@
 package com.example.pavlov.views
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -84,7 +85,6 @@ fun GoalAddPopup(
                             .padding(bottom = 16.dp)
                     )
 
-                    //Show delete when editing
                     if (state.isEditMode) {
                         Button(
                             onClick = {
@@ -110,13 +110,21 @@ fun GoalAddPopup(
                 }
             },
             confirmButton = {
-                Button(onClick = { onEvent(GoalsEvent.ConfirmAddGoal) }
+                Button(onClick = { onEvent(GoalsEvent.ConfirmAddGoal) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary
+                    )
                 ) {
                     Text(text = if (state.isEditMode) "Update" else "Add")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onEvent(GoalsEvent.HideAddGoalAlert) }
+                TextButton(
+                    onClick = { onEvent(GoalsEvent.HideAddGoalAlert) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 ) {
                     Text("Cancel")
                 }

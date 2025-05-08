@@ -11,52 +11,58 @@ import androidx.compose.ui.graphics.Color
 import com.example.pavlov.PavlovApplication
 
 // Dark theme colors
-private val DarkPurple = Color(0xFF3F2C70)
-private val DeepPurple = Color(0xFF2A1B50)
-private val LightPurple = Color(0xFF9C8BC1)
-private val TrueBlack = Color(0xFF000000) // totally black background
-private val DarkGrey = Color(0xFF121212) // almost black
-private val MediumGrey = Color(0xFF1A1A1A) // dark grey
-private val LightGrey = Color(0xFF252525) // medium grey
+private val Burgundy = Color(0xFF800020)
+private val DeepBurgundy = Color(0xFF590016)
+private val TrueBlack = Color(0xFF000000)
+private val DarkGrey = Color(0xFF121212)
+private val LightGrey = Color(0xFF757575)
 private val OffWhite = Color(0xFFF0F0F0)
-private val AccentColor = Color(0xFF8E77C5)
+private val AccentColor = Color(0xFFDAA520)
+private val tertiaryGreen = Color(0xFF00796B)
+private val ErrorRed = Color(0xFFF44336)
 
 // Light theme colors
-private val LightThemePurple = Color(0xFF7C4DFF)
-private val LightThemeBackground = Color(0xFFF5F5F5) // light grey (not white)
-private val LightThemeSurface = Color(0xFFFFFFFF) // white
+private val RoyalBlue = Color(0xFF4169E1)
+private val LightSilver = Color(0xFFE8E8E8)
+private val Silver = Color(0xFFC0C0C0)
+private val LightTeal = Color(0xFF546E7A)
 
 // Dark color scheme
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkPurple,
-    primaryContainer = DeepPurple,
-    secondary = LightPurple,
+    primary = Burgundy,
+    primaryContainer = DeepBurgundy,
+    secondary = AccentColor,
     background = TrueBlack,
     surface = DarkGrey,
     onPrimary = OffWhite,
     onSecondary = DarkGrey,
     onBackground = OffWhite,
     onSurface = OffWhite,
-    surfaceVariant = MediumGrey,
-    onSurfaceVariant = Color(0xFFD0D0D0),
-    error = Color(0xFFF44336)
+    surfaceVariant = LightGrey,
+    onSurfaceVariant = OffWhite,
+    tertiary = tertiaryGreen,
+    onTertiary = OffWhite,
+    error = ErrorRed,
+    onError = OffWhite,
 )
 
 // Light color scheme
 private val LightColorScheme = lightColorScheme(
-    primary = LightThemePurple,
-    primaryContainer = DarkPurple,
+    primary = RoyalBlue,
+    primaryContainer = Silver,
     secondary = AccentColor,
-    background = LightThemeBackground,
-    surface = LightThemeSurface,
+    background = LightSilver,
+    surface = Color.White,
     onPrimary = OffWhite,
-    onSecondary = OffWhite,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    surfaceVariant = Color(0xFFE4E4E4),
-    onSurfaceVariant = Color(0xFF444444),
-    error = Color(0xFFF44336)
-
+    onSecondary = DarkGrey,
+    onBackground = DarkGrey,
+    onSurface = DarkGrey,
+    surfaceVariant = Silver,
+    onSurfaceVariant = DarkGrey,
+    tertiary = LightTeal,
+    onTertiary = Color.White,
+    error = ErrorRed,
+    onError = OffWhite
 )
 
 @Composable

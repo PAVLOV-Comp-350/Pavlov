@@ -58,6 +58,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.pavlov.PavlovApplication
 import com.example.pavlov.models.Goal
 import com.example.pavlov.models.PavlovDayOfWeek
 import com.example.pavlov.models.PavlovDaysOfWeek
@@ -67,6 +68,8 @@ import com.example.pavlov.viewmodels.GoalsEvent
 import com.example.pavlov.viewmodels.GoalsState
 import com.example.pavlov.viewmodels.SharedEvent
 import com.example.pavlov.viewmodels.SharedState
+import androidx.compose.runtime.collectAsState
+
 
 
 /**
@@ -88,7 +91,7 @@ fun GoalsListScreen(
         topBar = {
             Column {
                 PavlovTopBar(sharedState, onEvent = { onEvent(it) })
-                RankAndXpBar(sharedState) // XP bar just below top bar
+            // XP bar just below top bar
             }
         },
         floatingActionButton = {
@@ -199,11 +202,18 @@ fun GoalContainer(
                             modifier = Modifier.padding(8.dp)
                         )
                     }
-                    IconButton(onClick = {expanded = !expanded}) {
+                    val isDarkMode by PavlovApplication.isDarkTheme.collectAsState()
+
+                    IconButton(onClick = {expanded = !expanded}, modifier = Modifier.size(48.dp)) {
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Edit goal",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = if (isDarkMode)
+                                Color(0xFFA04040)
+                                        else
+                                MaterialTheme.colorScheme.primary,
+
+                           modifier = Modifier.size(32.dp)
                         )
                     }
                 }
@@ -373,7 +383,6 @@ fun GoalItem(
 
                             Column {
 
-                                // Show streak if available
                                 if (goal.streak > 0) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Row(
@@ -403,7 +412,6 @@ fun GoalItem(
                                         )
                                     }
                                 }
-                                //Display active days as small indicators
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
